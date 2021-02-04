@@ -10,7 +10,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        CharStream cs = CharStreams.fromFileName("./src/MyNum.Java");
+        //CharStream cs = CharStreams.fromFileName("./src/MyNum.Java");
+        CharStream cs = CharStreams.fromFileName("./test.txt");
         JavaLexer javaLexer = new JavaLexer(cs);
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
@@ -22,14 +23,14 @@ public class Main {
         //Prints each token classifier and literal
         /*for (Token t : token.getTokens()) {
             System.out.printf("%-20s %s\n", JavaLexer.VOCABULARY.getSymbolicName(t.getType()), t.getText());
-        }*/
+        } */
 
-        String[] pycode = transpile(token);
+        /*String[] pycode = transpile(token);
 
         // Need to find someway to account for spacing
         for (int i = 0; i < pycode.length; i++) {
             System.out.print(pycode[i]);
-        }
+        } */
 
     }
 

@@ -1,25 +1,93 @@
+import org.antlr.v4.runtime.tree.ParseTree;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MyVisitor extends JavaBaseVisitor<Object>{
+
+    public static List<String> newTree = new ArrayList<>();
 
     @Override public Object visitCompilationUnit(JavaParser.CompilationUnitContext ctx) {
         return visitChildren(ctx);
     }
 
+    @Override public Object visitClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitNormalClassDeclaration(JavaParser.NormalClassDeclarationContext ctx) {
+        int childCount = ctx.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            if (ctx.getChild(i).getChildCount() == 0) {
+                newTree.add(ctx.getChild(i).getText());
+            }
+        }
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitClassBody(JavaParser.ClassBodyContext ctx) {
+        int childCount = ctx.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            if (ctx.getChild(i).getText().equals("{")) {
+                newTree.add(":");
+            }
+        }
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitClassBodyDeclaration(JavaParser.ClassBodyDeclarationContext ctx) {
+        List<ParseTree> children = ctx.children;
+        String psvm = "publicstaticvoidmain(String[]args)";
+        String found ="";
+        String lbrace = "{";
+        int lbIndex = 0;
+
+        for (int i = 0; i < children.size(); i++) {
+            String child = children.get(i).getText();
+
+            if (child.contains(lbrace)) {
+                lbIndex = child.indexOf(lbrace);
+                found += child.substring(0, lbIndex);
+                break;
+            }
+
+            found += child;
+        }
+
+        if (found.equals(psvm)) {
+            // Add main function
+            newTree.add("def");
+            newTree.add("main");
+            newTree.add("()");
+            newTree.add(":");
+        }
+
+        return visitChildren(ctx);
+    }
+    /*
+    @Override public Object visitModifiers(JavaParser.ModifiersContext ctx) { return visitChildren(ctx); } */
+
+    // BASIC PRIMITIVE TYPE CONVERSION
+
+    @Override public Object visitPrimitiveType(JavaParser.PrimitiveTypeContext ctx) {
+        newTree.add("var");
+        //System.out.println(newTree);
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
+        newTree.add(ctx.getText());
+        return visitChildren(ctx); //num=5
+    }
+
+
+
+/*
+
     @Override public Object visitPackageDeclaration(JavaParser.PackageDeclarationContext ctx) {
         return visitChildren(ctx);
     }
 
-    @Override public Object visitPrimitiveType(JavaParser.PrimitiveTypeContext ctx) {
-        //System.out.println("\n" + ctx.getText() + " ");
-        return "var";
-    }
-
-    @Override public Object visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
-        //System.out.println("\n" + ctx.getText() + " ");
-        return ctx.getText();
-     }
-
-/*
     @Override public Object visitImportDeclaration(JavaParser.ImportDeclarationContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitTypeDeclaration(JavaParser.TypeDeclarationContext ctx) { return visitChildren(ctx); }
@@ -29,12 +97,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     @Override public Object visitClassOrInterfaceModifiers(JavaParser.ClassOrInterfaceModifiersContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitClassOrInterfaceModifier(JavaParser.ClassOrInterfaceModifierContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitModifiers(JavaParser.ModifiersContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitClassDeclaration(JavaParser.ClassDeclarationContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitNormalClassDeclaration(JavaParser.NormalClassDeclarationContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitTypeParameters(JavaParser.TypeParametersContext ctx) { return visitChildren(ctx); }
 
@@ -61,8 +123,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     @Override public Object visitClassBody(JavaParser.ClassBodyContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitInterfaceBody(JavaParser.InterfaceBodyContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitClassBodyDeclaration(JavaParser.ClassBodyDeclarationContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitMemberDecl(JavaParser.MemberDeclContext ctx) { return visitChildren(ctx); }
 

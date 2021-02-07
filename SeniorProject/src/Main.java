@@ -7,13 +7,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class Main {
 
     public static void main(String[] args) throws IOException {
 
         CharStream cs = CharStreams.fromFileName("./src/MyNum.Java");
-        //CharStream cs = CharStreams.fromFileName("./test.txt");
         JavaLexer javaLexer = new JavaLexer(cs);
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
@@ -31,16 +29,34 @@ public class Main {
             myLiterals.add(t.getText());
         }
 
-        Transpile pycode = new Transpile(myTokens, myLiterals);
+        MyVisitor visit = new MyVisitor();
+        List<String> pyCode = visit.newTree;
 
-        List<String> literals = pycode.transpiler();
-        System.out.println();
+        //ADDING THE INIT FUNCTION
+        pyCode.add("\nif");
+        pyCode.add("__name__");
+        pyCode.add("==");
+        pyCode.add("\"__main__\"");
+        pyCode.add(":");
+        pyCode.add("main()");
 
-        // Need to find someway to account for spacing
-        for (int i = 0; i < literals.size(); i++) {
-            System.out.print(literals.get(i));
+        printPy(pyCode);
+    }
+
+    public static void printPy (List<String> myPy) {
+
+        for (int i = 0; i < myPy.size(); i++) {
+
+            if (i == 0) {
+                System.out.print("\n" + myPy.get(i));
+            } else {
+                if(myPy.get(i).equals(":")) {
+                    System.out.print(myPy.get(i) + "\n\t");
+                } else {
+                    System.out.print(" " + myPy.get(i));
+                }
+            }
         }
-
     }
 
 }

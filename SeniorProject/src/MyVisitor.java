@@ -6,6 +6,13 @@ import java.util.List;
 public class MyVisitor extends JavaBaseVisitor<Object>{
 
     public static List<String> newTree = new ArrayList<>();
+    public static int bracketCount = 0;
+
+    public void setTabCount() {
+            for (int i = 0; i < bracketCount; i ++) {
+                newTree.add("\t");
+            }
+    }
 
     @Override public Object visitCompilationUnit(JavaParser.CompilationUnitContext ctx) {
         return visitChildren(ctx);
@@ -29,7 +36,11 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
         int childCount = ctx.getChildCount();
         for (int i = 0; i < childCount; i++) {
             if (ctx.getChild(i).getText().equals("{")) {
+                bracketCount++;
                 newTree.add(":");
+                setTabCount();
+            } else if (ctx.getChild(i).getText().equals("}")) {
+                bracketCount--;
             }
         }
         return visitChildren(ctx);
@@ -60,23 +71,47 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
             newTree.add("main");
             newTree.add("()");
             newTree.add(":");
+            newTree.add("\t");
         }
 
         return visitChildren(ctx);
     }
-    /*
-    @Override public Object visitModifiers(JavaParser.ModifiersContext ctx) { return visitChildren(ctx); } */
+
+    @Override public Object visitMethodBody(JavaParser.MethodBodyContext ctx) { return visitChildren(ctx); }
+
+    @Override public Object visitBlock(JavaParser.BlockContext ctx) {
+        int childCount = ctx.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            if (ctx.getChild(i).getText().equals("{")) {
+                bracketCount++;
+                setTabCount();
+            } else if (ctx.getChild(i).getText().equals("}")) {
+                bracketCount--;
+            }
+        }
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitBlockStatement(JavaParser.BlockStatementContext ctx) {
+        System.out.println(bracketCount);
+        return visitChildren(ctx);
+    }
+
+    /*@Override public Object visitModifiers(JavaParser.ModifiersContext ctx) { return visitChildren(ctx); } */
 
     // BASIC PRIMITIVE TYPE CONVERSION
 
     @Override public Object visitPrimitiveType(JavaParser.PrimitiveTypeContext ctx) {
-        newTree.add("var");
-        //System.out.println(newTree);
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
         return visitChildren(ctx);
     }
 
     @Override public Object visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
         newTree.add(ctx.getText());
+        newTree.add(";");
         return visitChildren(ctx); //num=5
     }
 
@@ -198,8 +233,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
 
     @Override public Object visitFormalParameterDeclsRest(JavaParser.FormalParameterDeclsRestContext ctx) { return visitChildren(ctx); }
 
-    @Override public Object visitMethodBody(JavaParser.MethodBodyContext ctx) { return visitChildren(ctx); }
-
     @Override public Object visitConstructorBody(JavaParser.ConstructorBodyContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitQualifiedName(JavaParser.QualifiedNameContext ctx) { return visitChildren(ctx); }
@@ -239,8 +272,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     @Override public Object visitBlock(JavaParser.BlockContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitBlockStatement(JavaParser.BlockStatementContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) { return visitChildren(ctx); }
 

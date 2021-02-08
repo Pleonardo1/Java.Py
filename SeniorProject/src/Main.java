@@ -20,24 +20,18 @@ public class Main {
         MyVisitor visitor = new MyVisitor();
         visitor.visit(tree);
 
-        List<String> myTokens = new ArrayList<>();
-        List<String> myLiterals = new ArrayList<>();
-
-        //Prints each token classifier and literal
-        for (Token t : token.getTokens()) {
-            myTokens.add(JavaLexer.VOCABULARY.getSymbolicName(t.getType()));
-            myLiterals.add(t.getText());
-        }
-
+        /*  We created a visitor object in order to
+            access the array list that appends the
+            relevant node */
         MyVisitor visit = new MyVisitor();
         List<String> pyCode = visit.newTree;
 
-        //ADDING THE INIT FUNCTION
-        pyCode.add("\nif");
-        pyCode.add("__name__");
-        pyCode.add("==");
-        pyCode.add("\"__main__\"");
-        pyCode.add(":");
+        /*  ADDING THE INIT FUNCTION
+            Since the init function will always be at the end
+            we can add it after the list has been through the
+            visitors  */
+        pyCode.add("\nif"); pyCode.add("__name__"); pyCode.add("==");
+        pyCode.add("\"__main__\""); pyCode.add(":"); pyCode.add("\t");
         pyCode.add("main()");
 
         printPy(pyCode);
@@ -51,8 +45,10 @@ public class Main {
                 System.out.print("\n" + myPy.get(i));
             } else {
                 if(myPy.get(i).equals(":")) {
-                    System.out.print(myPy.get(i) + "\n\t");
-                } else {
+                    System.out.print(myPy.get(i) + "\n");
+                } else if (myPy.get(i).equals(";")) {
+                    System.out.print("\n");
+                }else {
                     System.out.print(" " + myPy.get(i));
                 }
             }

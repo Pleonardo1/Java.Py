@@ -121,21 +121,28 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
         boolean isTrue = ctx.getChild(valuePos).getText().equals("true");
         boolean isFalse = ctx.getChild(valuePos).getText().equals("false");
 
+        String chld1 = "";
+        String chld2 = "";
+
         if (isTrue) {
-            pyList.add(ctx.getChild(0).getText());
-            pyList.add(ctx.getChild(1).getText());
-            pyList.add("True");
+            chld1 = ctx.getChild(0).getText();
+            chld2 = ctx.getChild(1).getText();
+            pyList.add(chld1 + chld2 + "True");
+
         } else if (isFalse) {
-            pyList.add(ctx.getChild(0).getText());
-            pyList.add(ctx.getChild(1).getText());
-            pyList.add("False");
+            chld1 = ctx.getChild(0).getText();
+            chld2 = ctx.getChild(1).getText();
+            pyList.add(chld1 + chld2 + "False");
+
         } else {
             pyList.add(ctx.getText());
+
         }
         pyList.add(";");
         return visitChildren(ctx); //num=5
     }
 
+    @Override public Object visitPrimary(JavaParser.PrimaryContext ctx) { return visitChildren(ctx);}
 
 
 /*
@@ -375,8 +382,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     @Override public Object visitUnaryExpressionNotPlusMinus(JavaParser.UnaryExpressionNotPlusMinusContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitCastExpression(JavaParser.CastExpressionContext ctx) { return visitChildren(ctx); }
-
-    @Override public Object visitPrimary(JavaParser.PrimaryContext ctx) { return visitChildren(ctx); }
 
     @Override public Object visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) { return visitChildren(ctx); }
 

@@ -5,12 +5,17 @@ import java.util.List;
 
 public class MyVisitor extends JavaBaseVisitor<Object>{
 
-    public static List<String> newTree = new ArrayList<>();
-    public static int bracketCount = 0;
+    // List array containing python code
+    public static List<String> pyList = new ArrayList<>();
+    
+    // index 0 = left bracket
+    // index 1 = right bracket
+    public int[] bracketCount = new int[2];
 
+    // Allows us to set indents for ea line
     public void setTabCount() {
-            for (int i = 0; i < bracketCount; i ++) {
-                newTree.add("\t");
+            for (int i = 0; i < bracketCount[0]; i ++) {
+                pyList.add("\t");
             }
     }
 
@@ -22,11 +27,14 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
         return visitChildren(ctx);
     }
 
+    // retrieves keyword CLASS and associated class name
     @Override public Object visitNormalClassDeclaration(JavaParser.NormalClassDeclarationContext ctx) {
         int childCount = ctx.getChildCount();
         for (int i = 0; i < childCount; i++) {
+
+            //if leaf node, then ass to array list
             if (ctx.getChild(i).getChildCount() == 0) {
-                newTree.add(ctx.getChild(i).getText());
+                pyList.add(ctx.getChild(i).getText());
             }
         }
         return visitChildren(ctx);
@@ -36,11 +44,11 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
         int childCount = ctx.getChildCount();
         for (int i = 0; i < childCount; i++) {
             if (ctx.getChild(i).getText().equals("{")) {
-                bracketCount++;
-                newTree.add(":");
+                bracketCount[0] += 1;
+                pyList.add(":");
                 setTabCount();
             } else if (ctx.getChild(i).getText().equals("}")) {
-                bracketCount--;
+                bracketCount[1] += 1;
             }
         }
         return visitChildren(ctx);
@@ -67,11 +75,10 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
 
         if (found.equals(psvm)) {
             // Add main function
-            newTree.add("def");
-            newTree.add("main");
-            newTree.add("()");
-            newTree.add(":");
-            newTree.add("\t");
+            pyList.add("def");
+            pyList.add("main");
+            pyList.add("(self)");
+            pyList.add(":");
         }
 
         return visitChildren(ctx);
@@ -83,17 +90,16 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
         int childCount = ctx.getChildCount();
         for (int i = 0; i < childCount; i++) {
             if (ctx.getChild(i).getText().equals("{")) {
-                bracketCount++;
-                setTabCount();
+                bracketCount[0] += 1;
             } else if (ctx.getChild(i).getText().equals("}")) {
-                bracketCount--;
+                bracketCount[1] += 1;
             }
         }
         return visitChildren(ctx);
     }
 
     @Override public Object visitBlockStatement(JavaParser.BlockStatementContext ctx) {
-        System.out.println(bracketCount);
+        setTabCount();
         return visitChildren(ctx);
     }
 
@@ -110,8 +116,23 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     }
 
     @Override public Object visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
-        newTree.add(ctx.getText());
-        newTree.add(";");
+
+        int valuePos = ctx.getChildCount() - 1;
+        boolean isTrue = ctx.getChild(valuePos).getText().equals("true");
+        boolean isFalse = ctx.getChild(valuePos).getText().equals("false");
+
+        if (isTrue) {
+            pyList.add(ctx.getChild(0).getText());
+            pyList.add(ctx.getChild(1).getText());
+            pyList.add("True");
+        } else if (isFalse) {
+            pyList.add(ctx.getChild(0).getText());
+            pyList.add(ctx.getChild(1).getText());
+            pyList.add("False");
+        } else {
+            pyList.add(ctx.getText());
+        }
+        pyList.add(";");
         return visitChildren(ctx); //num=5
     }
 

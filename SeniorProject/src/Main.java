@@ -37,10 +37,8 @@ public class Main {
         myWriter.close();
     }
 
-    /*
-        Current method for formatting and
-        printing the Python code
-     */
+
+    //  Current method for formatting the Python code
     public static String printPy (List<String> myPy) {
         String output = "";
 

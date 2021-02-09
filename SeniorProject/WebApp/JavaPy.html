@@ -8,29 +8,31 @@
 </head>
 <body>
     <article>
-        <img src="Java(py).png" class="center" width="50%"/>
+        <img src="Java(py).png" class="center" width="35%"/>
     </article>
 
+    <div class ="iFrames">
+        <div id="iFrame_input">
+            <iframe src="./MyNum.java"></iframe>
+        </div>
 
-    <div id="iFrame_input">
-        <iframe src="./MyNum.java">
-        </iframe>
+        <div id="iFrame_output">
+            <iframe id = "output" src = ""></iframe>
+        </div>
     </div>
 
-    <div id="iFrame_output">
-        <iframe src="./output.txt">
-        </iframe>
-    </div>
+    <button type="button" onclick="getOutput()">Convert</button>
+    <button type="button" onclick="clearOutput()">Clear</button>
 
-    <!--
-    <div class="box1">
-        <textarea class="text" id="text1" placeholder="Enter code here"></textarea>
-    </div>
-    <div class="box2">
-        <textarea class="text" ></textarea>
-    </div> -->
+    <script>
+    function getOutput() {
+        document.getElementById("output").src = "./output.txt";
+    }
 
-    <button type="button" onclick="inputFunction()">Convert</button>
+    function clearOutput() {
+        document.getElementById("output").src = "";
+    }
+    </script>
 
 </body>
 

@@ -95,6 +95,7 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
                 bracketCount[1] += 1;
             }
         }
+
         return visitChildren(ctx);
     }
 
@@ -106,7 +107,6 @@ public class MyVisitor extends JavaBaseVisitor<Object>{
     /*@Override public Object visitModifiers(JavaParser.ModifiersContext ctx) { return visitChildren(ctx); } */
 
     // BASIC PRIMITIVE TYPE CONVERSION
-
     @Override public Object visitPrimitiveType(JavaParser.PrimitiveTypeContext ctx) {
         return visitChildren(ctx);
     }

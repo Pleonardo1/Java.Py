@@ -1,10 +1,11 @@
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+
 import java.util.List;
 
 public class Main {
@@ -31,37 +32,34 @@ public class Main {
         pyCode.add("m"); pyCode.add("="); pyCode.add("MyNum()");
         pyCode.add("\n"); pyCode.add("m.main()");
 
-        // Call to formatting/output function
-        printPy(pyCode);
+        FileWriter myWriter = new FileWriter("./WebApp/Output.txt");
+        myWriter.write(printPy(pyCode));
+        myWriter.close();
     }
 
     /*
         Current method for formatting and
         printing the Python code
      */
-    public static void printPy (List<String> myPy) {
+    public static String printPy (List<String> myPy) {
+        String output = "";
 
         for (int i = 0; i < myPy.size(); i++) {
 
-            // Print the first element on new line
-            if (i == 0) {
-                System.out.print("\n" + myPy.get(i));
+            // we reach a colon, print : and start new line
+            if(myPy.get(i).equals(":")) {
+                output += myPy.get(i) + "\n";
 
-            } else {
+            // we reach a semi-colon, start new line
+            } else if (myPy.get(i).equals(";")) {
+                output += "\n";
 
-                // we reach a colon, print : and start new line
-                if(myPy.get(i).equals(":")) {
-                    System.out.print(myPy.get(i) + "\n");
-
-                // we reach a semi-colon, start new line
-                } else if (myPy.get(i).equals(";")) {
-                    System.out.print("\n");
-
-                // print current arraylist element
-                }else {
-                    System.out.print(" " + myPy.get(i));
-                }
+            // print current arraylist element
+            }else {
+                output += " " + myPy.get(i);
             }
         }
+
+        return output;
     }
 }

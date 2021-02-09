@@ -1,0 +1,10 @@
+ class MyNum:
+ 	 def main (self):
+ 	 	 num=5
+ 	 	 pi=3.14
+ 	 	 isX=True
+ 	 	 name="joe"
+ 
+
+ m = MyNum() 
+ m.main()

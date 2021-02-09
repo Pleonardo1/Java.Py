@@ -24,35 +24,44 @@ public class Main {
             access the array list that appends the
             relevant node */
         MyVisitor visit = new MyVisitor();
-        List<String> pyCode = visit.newTree;
+        List<String> pyCode = visit.pyList;
 
-        /*  ADDING THE INIT FUNCTION
-            Since the init function will always be at the end
-            we can add it after the list has been through the
-            visitors  */
-        pyCode.add("\nif"); pyCode.add("__name__"); pyCode.add("==");
-        pyCode.add("\"__main__\""); pyCode.add(":"); pyCode.add("\t");
-        pyCode.add("main()");
+        /*  Instantiating the class */
+        pyCode.add("\n\n");
+        pyCode.add("m"); pyCode.add("="); pyCode.add("MyNum()");
+        pyCode.add("\n"); pyCode.add("m.main()");
 
+        // Call to formatting/output function
         printPy(pyCode);
     }
 
+    /*
+        Current method for formatting and
+        printing the Python code
+     */
     public static void printPy (List<String> myPy) {
 
         for (int i = 0; i < myPy.size(); i++) {
 
+            // Print the first element on new line
             if (i == 0) {
                 System.out.print("\n" + myPy.get(i));
+
             } else {
+
+                // we reach a colon, print : and start new line
                 if(myPy.get(i).equals(":")) {
                     System.out.print(myPy.get(i) + "\n");
+
+                // we reach a semi-colon, start new line
                 } else if (myPy.get(i).equals(";")) {
                     System.out.print("\n");
+
+                // print current arraylist element
                 }else {
                     System.out.print(" " + myPy.get(i));
                 }
             }
         }
     }
-
 }

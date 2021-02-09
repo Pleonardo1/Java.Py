@@ -1,3 +1,5 @@
+package intermediate;
+
 import java.util.List;
 
 /**
@@ -78,11 +80,19 @@ public interface IntASTNode {
     void addChild(IntASTNode child);
 
     /**
-     * Get a {@code String} representation of this node.
+     * Get a {@code String} representation of this node. Not all
+     * nodes have a {@code String} representation.
      *
-     * @return
+     * @return A {@code String} representation of this node, or an empty {@code String} if none exists
      */
     String getText();
+
+    /**
+     * Sets the {@code String} representation of this node.
+     *
+     * @param text The new {@code String} representation of this node
+     */
+    void setText(String text);
 
     /**
      * Returns {@code true} if this node is the root of the tree,

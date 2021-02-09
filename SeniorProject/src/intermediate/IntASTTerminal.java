@@ -1,3 +1,6 @@
+package intermediate;
+
+import java.util.List;
 
 /**
  * A dummy interface used to show that as Intermediate AST Node
@@ -16,7 +19,22 @@ public interface IntASTTerminal extends IntASTExpression {
     }
 
     @Override
+    default <T extends IntASTNode> T getChild(int i, Class<? extends T> type) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     default int getChildCount() {
+        return 0;
+    }
+
+    @Override
+    default <T extends IntASTNode> int getChildCount(Class<? extends T> type) {
         return 0;
     }
 

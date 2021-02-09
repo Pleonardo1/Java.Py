@@ -1,3 +1,5 @@
+package intermediate;
+
 /**
  * Minimal implementation of the {@link IntASTNode} interface.
  */
@@ -33,5 +35,15 @@ public abstract class AbstractIntASTNode implements IntASTNode {
     @Override
     public String getText() {
         return this.text;
+    }
+
+    @Override
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    @Override
+    public String toString() {
+        return getText();
     }
 }

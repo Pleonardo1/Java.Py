@@ -1,3 +1,4 @@
+package intermediate;
 
 /**
  * A dummy interface used to show that an Intermediate AST Node

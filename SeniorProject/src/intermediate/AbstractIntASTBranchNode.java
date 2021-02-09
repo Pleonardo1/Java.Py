@@ -1,28 +1,38 @@
+package intermediate;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntASTBlock extends AbstractIntASTNode implements IntASTExpression {
-    private List<IntASTExpression> body;
+/**
+ * Minimal implementation of the {@link IntASTNode} interface
+ * while including code for child handling.
+ */
+public abstract class AbstractIntASTBranchNode extends AbstractIntASTNode {
+    /** Stores the child nodes of this branch node. */
+    protected List<IntASTNode> children;
 
-    public IntASTBlock(IntASTNode parent, String text) {
+    public AbstractIntASTBranchNode(IntASTNode parent, String text) {
         super(parent, text);
-        this.body = new ArrayList<>();
+        this.children = new ArrayList<>();
     }
 
-    public IntASTBlock(String text) {
+    public AbstractIntASTBranchNode(String text) {
         this(null, text);
     }
 
     @Override
     public IntASTNode getChild(int index) {
-        return this.body.get(index);
+        return this.children.get(index);
     }
 
     @Override
     public <T extends IntASTNode> T getChild(int i, Class<? extends T> type) {
-        if (i >= 0 && i < this.body.size()) {
+        // ensure the index is valid
+        if (i >= 0 && i < this.children.size()) {
+            // iterate through the child nodes until the i-th
+            // element (0-indexed) of type T is found
             int j = 0;
-            for (IntASTExpression x : this.body) {
+            for (IntASTNode x : this.children) {
                 if (type.isInstance(x)) {
                     if (j++ == i) {
                         return type.cast(x);
@@ -30,13 +40,15 @@ public class IntASTBlock extends AbstractIntASTNode implements IntASTExpression 
                 }
             }
         }
+        //
         return null;
     }
 
     @Override
     public <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
         ArrayList<T> out = new ArrayList<>();
-        for (IntASTExpression x : this.body) {
+        // add all child nodes of type T to the output
+        for (IntASTNode x : this.children) {
             if (type.isInstance(x)) {
                 out.add(type.cast(x));
             }
@@ -46,13 +58,14 @@ public class IntASTBlock extends AbstractIntASTNode implements IntASTExpression 
 
     @Override
     public int getChildCount() {
-        return this.body.size();
+        return this.children.size();
     }
 
     @Override
     public <T extends IntASTNode> int getChildCount(Class<? extends T> type) {
         int i = 0;
-        for (IntASTExpression x : this.body) {
+        // count all child nodes of type T
+        for (IntASTNode x : this.children) {
             if (type.isInstance(x)) {
                 i++;
             }
@@ -61,19 +74,7 @@ public class IntASTBlock extends AbstractIntASTNode implements IntASTExpression 
     }
 
     @Override
-    public void addChild(IntASTNode child) {
-        if (!(child instanceof IntASTExpression)) {
-            throw new IllegalArgumentException("IntASTBlock does not support children of type \""
-                    + child.getClass().getName() + "\"");
-        } else {
-            // add expressions sequentially
-            child.setParent(this);
-            this.body.add((IntASTExpression) child);
-        }
-    }
-
-    @Override
     public boolean isLeaf() {
-        return this.body.isEmpty();
+        return this.children.isEmpty();
     }
 }

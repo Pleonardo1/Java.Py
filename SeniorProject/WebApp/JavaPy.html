@@ -8,29 +8,60 @@
 </head>
 <body>
     <article>
-        <img src="Java(py).png" class="center" width="35%"/>
-    </article>
+        <img src="JavaPy.png" class="center" width="50%"/>
 
-    <div class ="iFrames">
-        <div id="iFrame_input">
-            <iframe src="./MyNum.java"></iframe>
-        </div>
+    <!--
+    <div class="topnav">
+        <a class="active" href="#home">HOME</a>
+        <a href="#about">ABOUT</a>
+    </div> -->
 
-        <div id="iFrame_output">
-            <iframe id = "output" src = ""></iframe>
-        </div>
+    <div class ="myTextAreas">
+        <!--<input id="myFile" type="file"/> -->
+        <textarea id="myTextArea" rows="20" columns="20" placeholder="Java Code Input..."></textArea>
+
+        <!--<input id="myFile2" type="file"/> -->
+        <textarea id="myTextArea2" src = "" rows="20" columns="20" placeholder="Python Code output..."></textArea>
     </div>
 
-    <button type="button" onclick="getOutput()">Convert</button>
-    <button type="button" onclick="clearOutput()">Clear</button>
+    <div class ="buttons">
+        <button type="button" onclick="getOutput()">Convert</button>
+        <button type="button" onclick="clearOutput()">Clear</button>
+    </div>
+
+    </article>
 
     <script>
+
+    let input = document.querySelector('input')
+    let textarea = document.querySelector('textarea')
+
+    input.addEventListener('change', () => {
+        let files = input.files;
+
+        if (files.length == 0) return;
+
+        const file = files[0];
+
+        let reader = new FileReader();
+
+        reader.onload = (e) => {
+            const file = e.target.result;
+
+            const lines = file.split(/\r\n|\n/);
+            textarea.value = lines.join('\n');
+
+        };
+        reader.onerror = (e) => alert(e.target.error.name);
+        reader.readAsText(file);
+    });
+
     function getOutput() {
         document.getElementById("output").src = "./output.txt";
     }
 
     function clearOutput() {
-        document.getElementById("output").src = "";
+        document.getElementById("myTextArea2").src = "";
     }
     </script>
 

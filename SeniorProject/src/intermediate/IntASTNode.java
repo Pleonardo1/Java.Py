@@ -45,6 +45,16 @@ public interface IntASTNode {
     <T extends IntASTNode> T getChild(int i, Class<? extends T> type);
 
     /**
+     * Returns a list of all children of this node. If no children
+     * exist, an empty list is returned.
+     *
+     * @return A list of all children of this node
+     */
+    default List<IntASTNode> getChildren() {
+        return getChildren(IntASTNode.class);
+    }
+
+    /**
      * Returns a list of all children of supertype {@code T}. If no
      * such children exist, an empty list is returned.
      *

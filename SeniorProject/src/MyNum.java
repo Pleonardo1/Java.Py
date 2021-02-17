@@ -5,4 +5,8 @@ class MyNum {
         boolean isX = true;
         String name = "joe";
     }
+
+    public void print(int x, int y, int z) {
+        x = y + z;
+    }
 }

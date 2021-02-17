@@ -1,5 +1,6 @@
 package intermediate;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ public interface IntASTTerminal extends IntASTExpression {
 
     @Override
     default <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
-        throw new UnsupportedOperationException();
+        return Collections.emptyList();
     }
 
     @Override

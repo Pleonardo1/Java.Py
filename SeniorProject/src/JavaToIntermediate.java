@@ -328,6 +328,76 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
         // TODO filter out simple variable declarations while leaving assignments
+        return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
+    }
+
+    @Override
+    public IntASTStatement visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
+        // ignore variable modifiers and type
+        return visitVariableDeclarators(ctx.variableDeclarators());
+    }
+
+    @Override
+    public IntASTStatement visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
+        IntASTExpressionList root = new IntASTExpressionList();
+        List<JavaParser.VariableDeclaratorContext> list = ctx.variableDeclarator();
+        int i;
+        // get the first variable declaration with assignment
+        for (i = 0; i < list.size(); i++) {
+            if (list.get(i).ASSIGN() != null) {
+                root.addChild(visitVariableDeclarator(list.get(i)));
+                break;
+            }
+        }
+        // get any remaining variable declarations with assignment
+        for (i++; i < list.size(); i++) {
+            if (list.get(i).ASSIGN() != null) {
+                root.addChild(visitVariableDeclarator(list.get(i)));
+            }
+        }
+        // only return the node if variable declarations with assignment were found
+        if (root.getChildCount() != 0) {
+            return root;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public IntASTNode visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
+        if (ctx.ASSIGN() != null) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            root.addChild(visitVariableDeclaratorId(ctx.variableDeclaratorId()));
+            root.addChild(new IntASTOperator("="));
+            root.addChild(visitVariableInitializer(ctx.variableInitializer()));
+            return root;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public IntASTNode visitVariableDeclaratorId(JavaParser.VariableDeclaratorIdContext ctx) {
+        // get variable name with array dimensions
+        StringBuilder out = new StringBuilder(ctx.Identifier().getText());
+        for (int i = 0; i < ctx.LBRACK().size(); i++) {
+            out.append("[]");
+        }
+        return new IntASTIdentifier(out.toString());
+    }
+
+    @Override
+    public IntASTNode visitVariableInitializer(JavaParser.VariableInitializerContext ctx) {
+        if (ctx.arrayInitializer() != null) {
+            return visitArrayInitializer(ctx.arrayInitializer());
+        } else {
+            return visitExpression(ctx.expression());
+        }
+    }
+
+    @Override
+    public IntASTNode visitArrayInitializer(JavaParser.ArrayInitializerContext ctx) {
+        // TODO write array initializer conversion
         return null;
     }
 
@@ -629,6 +699,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             root.addChild(new IntASTLiteral(ctx.literal().getText()));
             return root;
         } else if (ctx.NEW() != null) {
+            // TODO maybe create an IntASTCreator class?
             IntASTStatementExpression root = new IntASTStatementExpression();
             root.addChild(new IntASTOperator("new"));
             root.addChild(visitCreator(ctx.creator()));
@@ -688,7 +759,11 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
 
-
+    @Override
+    public IntASTForControl visitForControl(JavaParser.ForControlContext ctx) {
+        // TODO add ForControl Conversion
+        return null;
+    }
 
 
 

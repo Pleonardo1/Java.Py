@@ -11,7 +11,7 @@ package intermediate;
  *     x = y + z;
  * </pre>
  */
-public class IntASTStatementExpression extends AbstractIntASTBranchNode implements IntASTExpression {
+public class IntASTStatementExpression extends AbstractIntASTBranchNode implements IntASTStatement, IntASTExpression {
     public IntASTStatementExpression() {
         super("");
     }

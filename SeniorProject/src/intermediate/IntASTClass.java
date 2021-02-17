@@ -42,7 +42,7 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
             // adding the class's body, so ensure one doesn't
             // already exist
             if (super.children.isEmpty() ||
-                    (super.children.get(super.children.size()-1) instanceof IntASTClassBody)) {
+                    !(super.children.get(super.children.size()-1) instanceof IntASTClassBody)) {
                 // no existing class body, so insert normally
                 child.setParent(this);
                 super.children.add(child);
@@ -52,7 +52,7 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
                 throw new IllegalArgumentException("Cannot have more than one body per class declaration");
             }
         } else {
-            throw new IllegalArgumentException("intermediate.IntASTClass does not support children of type \""
+            throw new IllegalArgumentException("IntASTClass does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
     }

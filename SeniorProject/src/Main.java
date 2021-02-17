@@ -1,3 +1,4 @@
+import intermediate.IntASTNode;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -16,6 +17,9 @@ public class Main {
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
         ParseTree tree = parser.compilationUnit();
+
+        System.out.println("Intermediate tree conversion:");
+        toIntermediate(tree);
 
         MyVisitor visitor = new MyVisitor();
         visitor.visit(tree);
@@ -58,5 +62,21 @@ public class Main {
         }
 
         return output;
+    }
+
+    public static IntASTNode toIntermediate(ParseTree javaAST) {
+        // convert to intermediate
+        JavaToIntermediate intermediate = new JavaToIntermediate();
+        IntASTNode out = intermediate.visit(javaAST);
+        printIntermediate(out, "");
+        return out;
+    }
+
+    public static void printIntermediate(IntASTNode node, String indent) {
+        System.out.println(indent + node.getClass().getSimpleName() + ": " + node.getText());
+        indent += "  ";
+        for (IntASTNode child : node.getChildren(IntASTNode.class)) {
+            printIntermediate(child, indent);
+        }
     }
 }

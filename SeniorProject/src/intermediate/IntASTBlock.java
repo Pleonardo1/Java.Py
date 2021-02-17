@@ -22,7 +22,7 @@ public class IntASTBlock extends AbstractIntASTBranchNode implements IntASTState
             child.setParent(this);
             super.children.add(child);
         } else {
-            throw new IllegalArgumentException("intermediate.IntASTBlock does not support children of type \""
+            throw new IllegalArgumentException("IntASTBlock does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
     }

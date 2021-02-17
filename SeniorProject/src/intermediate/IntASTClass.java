@@ -7,13 +7,9 @@ package intermediate;
  * since Java supports nested classes, this class extends the dummy
  * abstract class {@link IntASTMember} to show that.
  */
-public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMember {
+public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMember, IntASTStatement {
     private boolean isStatic = false;
     private boolean isAbstract = false;
-
-    public IntASTClass(IntASTNode parent, String className) {
-        super(parent, className);
-    }
 
     public IntASTClass(String className) {
         super(className);

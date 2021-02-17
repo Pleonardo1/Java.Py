@@ -4,10 +4,6 @@ package intermediate;
  * Intermediate AST node that represents a constructor declaration.
  */
 public class IntASTConstructor extends AbstractIntASTBranchNode implements IntASTMember {
-    public IntASTConstructor(IntASTNode parent, String className) {
-        super(parent, className);
-    }
-
     public IntASTConstructor(String className) {
         super(className);
     }

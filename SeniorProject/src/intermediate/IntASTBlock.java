@@ -8,10 +8,6 @@ package intermediate;
 public class IntASTBlock extends AbstractIntASTBranchNode implements IntASTStatement, IntASTMember {
     private boolean isStatic = false;
 
-    public IntASTBlock(IntASTNode parent) {
-        super(parent, "");
-    }
-
     public IntASTBlock() {
         super("");
     }

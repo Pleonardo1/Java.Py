@@ -8,13 +8,9 @@ public abstract class AbstractIntASTNode implements IntASTNode {
     protected IntASTNode parent;
     protected String text;
 
-    public AbstractIntASTNode(IntASTNode parent, String text) {
-        this.parent = parent;
-        this.text = text;
-    }
-
     public AbstractIntASTNode(String text) {
-        this(null, text);
+        this.parent = null;
+        this.text = text;
     }
 
     @Override

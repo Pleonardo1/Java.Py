@@ -1,5 +1,8 @@
 import intermediate.*;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.List;
 
 /**
  * Uses the Java parse tree defined by Java.g4 and created by
@@ -88,6 +91,12 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             return null;
         }
         return visitClassOrInterfaceDeclaration(ctx.classOrInterfaceDeclaration());
+    }
+
+    @Override
+    public IntASTNode visitType(JavaParser.TypeContext ctx) {
+        // TODO implement type specification conversion (for stuff like type checking and casting)
+        throw new UnsupportedOperationException("the rule \"type\" is currently unsupported");
     }
 
     /**
@@ -186,53 +195,6 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTClass visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
-        if (ctx.annotationTypeDeclaration() != null) {
-            // TODO Do something about annotations? They don't seem important though
-            throw new UnsupportedOperationException("Annotation interfaces not supported");
-        }
-        return visitNormalInterfaceDeclaration(ctx.normalInterfaceDeclaration());
-    }
-
-    @Override
-    public IntASTClass visitNormalInterfaceDeclaration(JavaParser.NormalInterfaceDeclarationContext ctx) {
-        // treat interfaces the same as classes
-        IntASTClass root = new IntASTClass(ctx.Identifier().getText());
-        // get the inherited interfaces
-        if (ctx.typeList() != null && ctx.typeList().type() != null) {
-            for (JavaParser.TypeContext type : ctx.typeList().type()) {
-                root.addChild(new IntASTInherit(type.classOrInterfaceType().Identifier(0).getText()));
-            }
-        }
-        // get the interface body
-        root.addChild(visitInterfaceBody(ctx.interfaceBody()));
-        return root;
-        // ignores generic-type arguments (the ones in "<>")
-    }
-
-    @Override
-    public IntASTNode visitInterfaceBody(JavaParser.InterfaceBodyContext ctx) {
-        IntASTNode root = new IntASTClassBody();
-        // collect the declarations within the interface body
-        if (ctx.interfaceBodyDeclaration() != null) {
-            for (JavaParser.InterfaceBodyDeclarationContext decl : ctx.interfaceBodyDeclaration()) {
-                root.addChild(visitInterfaceBodyDeclaration(decl));
-            }
-        }
-        return root;
-    }
-
-    @Override
-    public IntASTNode visitInterfaceBodyDeclaration(JavaParser.InterfaceBodyDeclarationContext ctx) {
-        if (ctx.interfaceMemberDecl() == null) {
-            return null;
-        } else {
-            return visitInterfaceMemberDecl(ctx.interfaceMemberDecl());
-            // ignores modifiers on member declarations
-        }
-    }
-
-    @Override
     public IntASTMember visitMemberDecl(JavaParser.MemberDeclContext ctx) {
         // branch out into the different types of members
         if (ctx.genericMethodOrConstructorDecl() != null) {
@@ -301,12 +263,481 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTMethod visitMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
+        IntASTMethod root = new IntASTMethod(ctx.Identifier().getText());
+        JavaParser.MethodDeclaratorRestContext methCtx = ctx.methodDeclaratorRest();
+        root.addChild(visitFormalParameters(methCtx.formalParameters()));
+        if (methCtx.methodBody() != null) {
+            root.addChild(visitMethodBody(methCtx.methodBody()));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTMethodParameters visitFormalParameters(JavaParser.FormalParametersContext ctx) {
+        IntASTMethodParameters root = new IntASTMethodParameters();
+        // the formalParameterDecls rule is recursive
+        JavaParser.FormalParameterDeclsContext param = ctx.formalParameterDecls();
+        while (param != null) {
+            JavaParser.FormalParameterDeclsRestContext rest = param.formalParameterDeclsRest();
+            root.addChild(new IntASTIdentifier(rest.variableDeclaratorId().Identifier().getText()));
+            if (rest.ELLIPSIS() != null) {
+                root.addChild(new IntASTOperator("..."));
+            }
+            // get the next parameter
+            param = rest.formalParameterDecls();
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTBlock visitMethodBody(JavaParser.MethodBodyContext ctx) {
+        // delegate directly to visitBlock, since that is
+        // the entirety of the methodBody rule
+        return visitBlock(ctx.block());
+    }
+
+    @Override
+    public IntASTMember visitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
+        // TODO write field declaration conversion
         return null;
     }
 
     @Override
-    public IntASTStatement visitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
+    public IntASTBlock visitBlock(JavaParser.BlockContext ctx) {
+        IntASTBlock root = new IntASTBlock();
+        for (JavaParser.BlockStatementContext block : ctx.blockStatement()) {
+            root.addChild(visitBlockStatement(block));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitBlockStatement(JavaParser.BlockStatementContext ctx) {
+        if (ctx.localVariableDeclarationStatement() != null) {
+            // variable declaration
+            return visitLocalVariableDeclarationStatement(ctx.localVariableDeclarationStatement());
+        } else if (ctx.classOrInterfaceDeclaration() != null) {
+            // class/interface declaration
+            return visitClassOrInterfaceDeclaration(ctx.classOrInterfaceDeclaration());
+        } else {
+            // regular statement
+            return visitStatement(ctx.statement());
+        }
+    }
+
+    @Override
+    public IntASTStatement visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
+        // TODO filter out simple variable declarations while leaving assignments
         return null;
+    }
+
+    @Override
+    public IntASTStatement visitStatement(JavaParser.StatementContext ctx) {
+        // go down the list of this rule's possibilities
+        if (ctx.block() != null) {
+            // block statement
+            return visitBlock(ctx.block());
+        } else if (ctx.ASSERT() != null) {
+            // TODO add support for assert statements? they may be outside the scope of this project though
+            throw new UnsupportedOperationException("assert statements not supported");
+        } else if (ctx.IF() != null) {
+            // if statement
+            // TODO create IntASTIf class
+            throw new UnsupportedOperationException();
+        } else if (ctx.FOR() != null) {
+            // for loop
+            // TODO create IntASTFor class
+            throw new UnsupportedOperationException();
+        } else if (ctx.WHILE() != null) {
+            // while loop or do-while loop
+            // TODO create IntASTWhile class
+            throw new UnsupportedOperationException();
+        } else if (ctx.TRY() != null) {
+            // try block or try-with-resources block
+            // TODO create IntASTTry class
+            throw new UnsupportedOperationException();
+        } else if (ctx.SWITCH() != null) {
+            // switch block
+            // TODO create IntASTSwitch class
+            throw new UnsupportedOperationException();
+        } else if (ctx.SYNCHRONIZED() != null) {
+            // TODO add support for synchronized blocks? no idea how they'd translate though
+            throw new UnsupportedOperationException("synchronized blocks not supported");
+        } else if (ctx.RETURN() != null) {
+            // return statement
+            // TODO add support for return statements. either create a new class or add it to an existing class's functionality
+            throw new UnsupportedOperationException();
+        } else if (ctx.THROW() != null) {
+            // throw statement
+            // TODO add support for return statements. should be the same as adding support for return statements
+            throw new UnsupportedOperationException();
+        } else if (ctx.BREAK() != null) {
+            // loop break statement
+            // TODO add support for loop breaks. same as adding support for return/throw, but labeled breaks have no Python equivalent
+            throw new UnsupportedOperationException();
+        } else if (ctx.CONTINUE() != null) {
+            // loop continue statement
+            // TODO add support for loop continues. same as adding support for return/throw, but labeled continues have no Python equivalent
+            throw new UnsupportedOperationException();
+        } else if (ctx.statementExpression() != null) {
+            // ordinary statement
+            return visitStatementExpression(ctx.statementExpression());
+        } else if (ctx.COLON() != null) {
+            // label declaration
+            // TODO add support for label declarations? no idea how they'd translate into Python though
+            throw new UnsupportedOperationException("jump labels not supported");
+        } else {
+            // empty statement. literally just a semi-colon
+            return null;
+        }
+    }
+
+    @Override
+    public IntASTStatement visitStatementExpression(JavaParser.StatementExpressionContext ctx) {
+        return visitExpression(ctx.expression());
+    }
+
+    @Override
+    public IntASTStatement visitExpression(JavaParser.ExpressionContext ctx) {
+        // parse down the expression rule tree
+        IntASTStatement root = visitConditionalExpression(ctx.conditionalExpression());
+        if (ctx.assignmentOperator() != null) {
+            root.addChild(new IntASTOperator(ctx.assignmentOperator().getText()));
+            root.addChild(visitExpression(ctx.expression()));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitConditionalExpression(JavaParser.ConditionalExpressionContext ctx) {
+        // ternary conditional expression
+        IntASTStatement root = visitConditionalOrExpression(ctx.conditionalOrExpression());
+        if (ctx.QUESTION() != null) {
+            root.addChild(new IntASTOperator("?"));
+            root.addChild(visitExpression(ctx.expression()));
+            root.addChild(new IntASTOperator(":"));
+            root.addChild(visitConditionalExpression(ctx.conditionalExpression()));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitConditionalOrExpression(JavaParser.ConditionalOrExpressionContext ctx) {
+        List<JavaParser.ConditionalAndExpressionContext> list = ctx.conditionalAndExpression();
+        IntASTStatement root = visitConditionalAndExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator("||"));
+            root.addChild(visitConditionalAndExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitConditionalAndExpression(JavaParser.ConditionalAndExpressionContext ctx) {
+        List<JavaParser.InclusiveOrExpressionContext> list = ctx.inclusiveOrExpression();
+        IntASTStatement root = visitInclusiveOrExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator("&&"));
+            root.addChild(visitInclusiveOrExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitInclusiveOrExpression(JavaParser.InclusiveOrExpressionContext ctx) {
+        List<JavaParser.ExclusiveOrExpressionContext> list = ctx.exclusiveOrExpression();
+        IntASTStatement root = visitExclusiveOrExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator("|"));
+            root.addChild(visitExclusiveOrExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitExclusiveOrExpression(JavaParser.ExclusiveOrExpressionContext ctx) {
+        List<JavaParser.AndExpressionContext> list = ctx.andExpression();
+        IntASTStatement root = visitAndExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator("^"));
+            root.addChild(visitAndExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitAndExpression(JavaParser.AndExpressionContext ctx) {
+        List<JavaParser.EqualityExpressionContext> list = ctx.equalityExpression();
+        IntASTStatement root = visitEqualityExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator("&"));
+            root.addChild(visitEqualityExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitEqualityExpression(JavaParser.EqualityExpressionContext ctx) {
+        // slightly more complicated since "==" and "!=" are used
+        // at the same time here. have to loop through the entire
+        // children list in order to convert and preserve the
+        // operations
+        List<ParseTree> nodes = ctx.children;
+        IntASTStatement root = visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(0));
+        for (int i = 1; i < nodes.size(); i += 2) {
+            // get the "==" or "!=" operator
+            root.addChild(new IntASTOperator(nodes.get(i).getText()));
+            // add the next expression
+            root.addChild(visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(i+1)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitInstanceOfExpression(JavaParser.InstanceOfExpressionContext ctx) {
+        IntASTStatement root = visitRelationalExpression(ctx.relationalExpression());
+        if (ctx.INSTANCEOF() != null) {
+            root.addChild(new IntASTOperator("instanceof"));
+            root.addChild(visitType(ctx.type()));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitRelationalExpression(JavaParser.RelationalExpressionContext ctx) {
+        List<JavaParser.ShiftExpressionContext> list = ctx.shiftExpression();
+        List<JavaParser.RelationalOpContext> ops = ctx.relationalOp();
+        IntASTStatement root = visitShiftExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            root.addChild(new IntASTOperator(ops.get(i-1).getText()));
+            root.addChild(visitShiftExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitShiftExpression(JavaParser.ShiftExpressionContext ctx) {
+        List<JavaParser.AdditiveExpressionContext> list = ctx.additiveExpression();
+        List<JavaParser.ShiftOpContext> ops = ctx.shiftOp();
+        IntASTStatement root = visitAdditiveExpression(list.get(0));
+        for (int i = 1; i < list.size(); i++) {
+            // TODO since Python does not have ">>>" we have to find some way to convert unsigned bitwise right-shift
+            root.addChild(new IntASTOperator(ops.get(i-1).getText()));
+            root.addChild(visitAdditiveExpression(list.get(i)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitAdditiveExpression(JavaParser.AdditiveExpressionContext ctx) {
+        // slightly more complicated since "+" and "-" are used
+        // at the same time here. have to loop through the entire
+        // children list in order to convert and preserve the
+        // operations
+        List<ParseTree> nodes = ctx.children;
+        IntASTStatement root = visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(0));
+        for (int i = 1; i < nodes.size(); i += 2) {
+            // get the "+" or "-" operator
+            root.addChild(new IntASTOperator(nodes.get(i).getText()));
+            // add the next expression
+            root.addChild(visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(i+1)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitMultiplicativeExpression(JavaParser.MultiplicativeExpressionContext ctx) {
+        // slightly more complicated since "*", "/" and "%" are used
+        // at the same time here. have to loop through the entire
+        // children list in order to convert and preserve the
+        // operations
+        List<ParseTree> nodes = ctx.children;
+        IntASTStatement root = visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(0));
+        for (int i = 1; i < nodes.size(); i += 2) {
+            // get the "*", "/" or "%" operator
+            root.addChild(new IntASTOperator(nodes.get(i).getText()));
+            // add the next expression
+            root.addChild(visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(i+1)));
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitUnaryExpression(JavaParser.UnaryExpressionContext ctx) {
+        if (ctx.unaryExpressionNotPlusMinus() == null) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            if (ctx.ADD() != null) {
+                root.addChild(new IntASTOperator("+"));
+            } else if (ctx.SUB() != null) {
+                root.addChild(new IntASTOperator("-"));
+            } else if (ctx.INC() != null) {
+                root.addChild(new IntASTOperator("++"));
+            } else {
+                root.addChild(new IntASTOperator("--"));
+            }
+            root.addChild(visitUnaryExpression(ctx.unaryExpression()));
+            return root;
+        } else {
+            return visitUnaryExpressionNotPlusMinus(ctx.unaryExpressionNotPlusMinus());
+        }
+    }
+
+    @Override
+    public IntASTStatement visitUnaryExpressionNotPlusMinus(JavaParser.UnaryExpressionNotPlusMinusContext ctx) {
+        if (ctx.unaryExpression() != null) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            if (ctx.TILDE() != null) {
+                root.addChild(new IntASTOperator("~"));
+            } else {
+                root.addChild(new IntASTOperator("!"));
+            }
+            root.addChild(visitUnaryExpression(ctx.unaryExpression()));
+            return root;
+        } else if (ctx.castExpression() != null) {
+            return visitCastExpression(ctx.castExpression());
+        } else {
+            IntASTStatement root = visitPrimary(ctx.primary());
+            for (JavaParser.SelectorContext select : ctx.selector()) {
+                root.addChild(visitSelector(select));
+            }
+            if (ctx.INC() != null) {
+                root.addChild(new IntASTOperator("++"));
+            } else if (ctx.DEC() != null) {
+                root.addChild(new IntASTOperator("--"));
+            }
+            return root;
+        }
+    }
+
+    @Override
+    public IntASTStatement visitCastExpression(JavaParser.CastExpressionContext ctx) {
+        // TODO add type casting to the intermediate AST
+        return null;
+    }
+
+    @Override
+    public IntASTStatement visitPrimary(JavaParser.PrimaryContext ctx) {
+        // TODO add primary conversion. this consists of parenthesis, "this" and "super" prefixes, literals, variable names, etc.
+        if (ctx.parExpression() != null) {
+            return visitParExpression(ctx.parExpression());
+        } else if (ctx.THIS() != null && ctx.nonWildcardTypeArguments() == null) {
+            // TODO add "this(...)" conversion for constructors
+        } else if (ctx.SUPER() != null) {
+            // TODO add "super(...)" conversion for constructors
+        } else if (ctx.literal() != null) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            root.addChild(new IntASTLiteral(ctx.literal().getText()));
+            return root;
+        } else if (ctx.NEW() != null) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            root.addChild(new IntASTOperator("new"));
+            root.addChild(visitCreator(ctx.creator()));
+            return root;
+        } else if (ctx.nonWildcardTypeArguments() != null) {
+            // TODO add generic-type-prefixed method call?
+            throw new UnsupportedOperationException("Explicit generic-type method calls are unsupported");
+        } else if (ctx.Identifier() != null && ctx.Identifier().size() > 0) {
+            IntASTStatementExpression root = new IntASTStatementExpression();
+            // combine multiple identifiers (separated by ".") into a single identifier
+            List<TerminalNode> ids = ctx.Identifier();
+            StringBuilder id = new StringBuilder(ids.get(0).getText());
+            for (int i = 1; i < ids.size(); i++) {
+                id.append('.').append(ids.get(i).getText());
+            }
+            root.addChild(new IntASTIdentifier(id.toString()));
+            // get the identifiers' suffix, if one exists
+            if (ctx.identifierSuffix() != null) {
+                root.addChild(visitIdentifierSuffix(ctx.identifierSuffix()));
+            }
+            return root;
+        } else if (ctx.primitiveType() != null) {
+            // TODO add ".class" for primitives and primitive arrays?
+            throw new UnsupportedOperationException("\".class\" for primitives and primitive arrays are unsupported");
+        } else {
+            // TODO add ".class" for void type?
+            throw new UnsupportedOperationException("\"void.class\" is unsupported");
+        }
+        return null;
+    }
+
+    @Override
+    public IntASTStatement visitParExpression(JavaParser.ParExpressionContext ctx) {
+        IntASTStatementExpression root = new IntASTStatementExpression();
+        root.addChild(new IntASTOperator("("));
+        root.addChild(visitExpression(ctx.expression()));
+        root.addChild(new IntASTOperator(")"));
+        return root;
+    }
+
+    @Override
+    public IntASTStatement visitCreator(JavaParser.CreatorContext ctx) {
+        // TODO add creator conversion (array/object creation)
+        return null;
+    }
+
+    @Override
+    public IntASTStatement visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) {
+        // TODO add identifier suffix conversion (array indexing, ".class", method call parameters, etc.)
+        return null;
+    }
+
+    @Override
+    public IntASTStatement visitSelector(JavaParser.SelectorContext ctx) {
+        // TODO add selector conversion. this is not very clear but seems to consist of extensions to the primary rule
+        return null;
+    }
+
+
+
+
+
+
+
+    @Override
+    public IntASTClass visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
+        if (ctx.annotationTypeDeclaration() != null) {
+            // TODO Do something about annotations? They don't seem important though
+            throw new UnsupportedOperationException("Annotation interfaces not supported");
+        }
+        return visitNormalInterfaceDeclaration(ctx.normalInterfaceDeclaration());
+    }
+
+    @Override
+    public IntASTClass visitNormalInterfaceDeclaration(JavaParser.NormalInterfaceDeclarationContext ctx) {
+        // treat interfaces the same as classes
+        IntASTClass root = new IntASTClass(ctx.Identifier().getText());
+        // get the inherited interfaces
+        if (ctx.typeList() != null && ctx.typeList().type() != null) {
+            for (JavaParser.TypeContext type : ctx.typeList().type()) {
+                root.addChild(new IntASTInherit(type.classOrInterfaceType().Identifier(0).getText()));
+            }
+        }
+        // get the interface body
+        root.addChild(visitInterfaceBody(ctx.interfaceBody()));
+        return root;
+        // ignores generic-type arguments (the ones in "<>")
+    }
+
+    @Override
+    public IntASTNode visitInterfaceBody(JavaParser.InterfaceBodyContext ctx) {
+        IntASTNode root = new IntASTClassBody();
+        // collect the declarations within the interface body
+        if (ctx.interfaceBodyDeclaration() != null) {
+            for (JavaParser.InterfaceBodyDeclarationContext decl : ctx.interfaceBodyDeclaration()) {
+                root.addChild(visitInterfaceBodyDeclaration(decl));
+            }
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTNode visitInterfaceBodyDeclaration(JavaParser.InterfaceBodyDeclarationContext ctx) {
+        if (ctx.interfaceMemberDecl() == null) {
+            return null;
+        } else {
+            return visitInterfaceMemberDecl(ctx.interfaceMemberDecl());
+            // ignores modifiers on member declarations
+        }
     }
 
     @Override
@@ -338,8 +769,4 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         return null;
     }
 
-    @Override
-    public IntASTBlock visitBlock(JavaParser.BlockContext ctx) {
-        return null;
-    }
 }

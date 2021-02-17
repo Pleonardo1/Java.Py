@@ -11,13 +11,9 @@ public abstract class AbstractIntASTBranchNode extends AbstractIntASTNode {
     /** Stores the child nodes of this branch node. */
     protected List<IntASTNode> children;
 
-    public AbstractIntASTBranchNode(IntASTNode parent, String text) {
-        super(parent, text);
-        this.children = new ArrayList<>();
-    }
-
     public AbstractIntASTBranchNode(String text) {
-        this(null, text);
+        super(text);
+        this.children = new ArrayList<>();
     }
 
     @Override

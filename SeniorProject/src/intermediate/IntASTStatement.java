@@ -6,5 +6,5 @@ package intermediate;
  * single-line expressions or block statements such as if-else
  * statements and loops.
  */
-public interface IntASTStatement extends IntASTNode, IntASTMember {
+public interface IntASTStatement extends IntASTNode {
 }

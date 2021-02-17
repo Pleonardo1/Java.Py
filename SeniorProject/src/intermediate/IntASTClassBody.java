@@ -5,10 +5,6 @@ package intermediate;
  * declaration.
  */
 public class IntASTClassBody extends AbstractIntASTBranchNode {
-    public IntASTClassBody(IntASTNode parent) {
-        super(parent, "");
-    }
-
     public IntASTClassBody() {
         super("");
     }

@@ -7,10 +7,6 @@ public class IntASTMethod extends AbstractIntASTBranchNode implements  IntASTMem
     private boolean isStatic = false;
     private boolean isAbstract = false;
 
-    public IntASTMethod(IntASTNode parent, String methodName) {
-        super(parent, methodName);
-    }
-
     public IntASTMethod(String methodName) {
         super(methodName);
     }
@@ -46,7 +42,7 @@ public class IntASTMethod extends AbstractIntASTBranchNode implements  IntASTMem
                 throw new IllegalArgumentException("Cannot have more than one set of method body in a method declaration");
             }
         } else {
-            throw new IllegalArgumentException("intermediate.IntASTMethod does not support children of type \""
+            throw new IllegalArgumentException("IntASTMethod does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
     }

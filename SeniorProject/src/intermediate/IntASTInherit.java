@@ -8,10 +8,6 @@ package intermediate;
  * clause.
  */
 public class IntASTInherit extends AbstractIntASTNode implements IntASTTerminal {
-    public IntASTInherit(IntASTNode parent, String inheritName) {
-        super(parent, inheritName);
-    }
-
     public IntASTInherit(String inheritName) {
         super(inheritName);
     }

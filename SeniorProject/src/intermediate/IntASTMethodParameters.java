@@ -5,11 +5,7 @@ package intermediate;
  * May be used to represent the formal parameters of a method
  * declaration or the input parameters of a method call.
  */
-public class IntASTMethodParameters extends AbstractIntASTBranchNode implements IntASTExpression {
-    public IntASTMethodParameters(IntASTNode parent) {
-        super(parent, "");
-    }
-
+public class IntASTMethodParameters extends AbstractIntASTBranchNode {
     public IntASTMethodParameters() {
         super("");
     }

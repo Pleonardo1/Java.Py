@@ -298,8 +298,9 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTMember visitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
-        // TODO write field declaration conversion
-        return null;
+        IntASTField root = new IntASTField();
+        root.addChild(visitVariableDeclarators(ctx.variableDeclarators()));
+        return root;
     }
 
     @Override
@@ -327,7 +328,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTExpression visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
-        // TODO filter out simple variable declarations while leaving assignments
+        // filter out simple variable declarations while leaving assignments
         return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
     }
 
@@ -421,7 +422,6 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             for (int i = 0; i < list.size(); i++) {
                 root.addChild(visitStatement(list.get(i)));
             }
-            // TODO add else logic
             return root;
         } else if (ctx.FOR() != null) {
             // for loop
@@ -429,10 +429,32 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             root.addChild(visitForControl(ctx.forControl()));
             root.addChild(visitStatement(ctx.statement(0)));
             return root;
+
+        } else if (ctx.DO() != null) {
+            //Do-While
+            IntASTDo root = new IntASTDo();
+
+            List<JavaParser.StatementContext> list = ctx.statement();
+
+            for (int i = 0; i < list.size(); i++) {
+                root.addChild(visitStatement(list.get(i)));
+            }
+
+            root.addChild(visitParExpression(ctx.parExpression()));
+            return root;
+
         } else if (ctx.WHILE() != null) {
-            // while loop or do-while loop
-            // TODO create IntASTWhile class
-            throw new UnsupportedOperationException();
+            // while loop
+            IntASTWhile root = new IntASTWhile();
+            root.addChild(visitParExpression(ctx.parExpression()));
+
+            List<JavaParser.StatementContext> list = ctx.statement();
+
+            for (int i = 0; i < list.size(); i++) {
+                root.addChild(visitStatement(list.get(i)));
+            }
+            return root;
+
         } else if (ctx.TRY() != null) {
             // try block or try-with-resources block
             // TODO create IntASTTry class
@@ -446,20 +468,37 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             throw new UnsupportedOperationException("synchronized blocks not supported");
         } else if (ctx.RETURN() != null) {
             // return statement
-            // TODO add support for return statements. either create a new class or add it to an existing class's functionality
-            throw new UnsupportedOperationException();
+            IntASTControl root = new IntASTControl ("return");
+
+            if (ctx.expression() != null) {
+                List<JavaParser.ExpressionContext> list = ctx.expression();
+
+                for (int i = 0; i < list.size(); i++) {
+                    root.addChild(visitExpression(ctx.expression(i)));
+                }
+            }
+            return root;
+
         } else if (ctx.THROW() != null) {
             // throw statement
-            // TODO add support for return statements. should be the same as adding support for return statements
-            throw new UnsupportedOperationException();
+            IntASTControl root = new IntASTControl("throw");
+
+            List<JavaParser.ExpressionContext> list = ctx.expression();
+
+            for (int i = 0; i < list.size(); i++) {
+                root.addChild(visitExpression(ctx.expression(i)));
+            }
+            //TODO Implement try for method handled throws vs try-catch throws
+            return root;
+
         } else if (ctx.BREAK() != null) {
             // loop break statement
-            // TODO add support for loop breaks. same as adding support for return/throw, but labeled breaks have no Python equivalent
-            throw new UnsupportedOperationException();
+            return new IntASTControl("break");
+
         } else if (ctx.CONTINUE() != null) {
             // loop continue statement
-            // TODO add support for loop continues. same as adding support for return/throw, but labeled continues have no Python equivalent
-            throw new UnsupportedOperationException();
+            return new IntASTControl("continue");
+
         } else if (ctx.statementExpression() != null) {
             // ordinary statement
             return visitStatementExpression(ctx.statementExpression());
@@ -481,10 +520,14 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitExpression(JavaParser.ExpressionContext ctx) {
         // parse down the expression rule tree
-        IntASTStatement root = visitConditionalExpression(ctx.conditionalExpression());
+        IntASTStatement root;
         if (ctx.assignmentOperator() != null) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitConditionalExpression(ctx.conditionalExpression()));
             root.addChild(new IntASTOperator(ctx.assignmentOperator().getText()));
             root.addChild(visitExpression(ctx.expression()));
+        } else {
+            root = visitConditionalExpression(ctx.conditionalExpression());
         }
         return root;
     }
@@ -492,12 +535,16 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitConditionalExpression(JavaParser.ConditionalExpressionContext ctx) {
         // ternary conditional expression
-        IntASTStatement root = visitConditionalOrExpression(ctx.conditionalOrExpression());
+        IntASTStatement root;
         if (ctx.QUESTION() != null) {
+            root = new IntASTTernaryExpression();
+            root.addChild(visitConditionalOrExpression(ctx.conditionalOrExpression()));
             root.addChild(new IntASTOperator("?"));
             root.addChild(visitExpression(ctx.expression()));
             root.addChild(new IntASTOperator(":"));
             root.addChild(visitConditionalExpression(ctx.conditionalExpression()));
+        } else {
+            root = visitConditionalOrExpression(ctx.conditionalOrExpression());
         }
         return root;
     }
@@ -505,16 +552,32 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitConditionalOrExpression(JavaParser.ConditionalOrExpressionContext ctx) {
         List<JavaParser.ConditionalAndExpressionContext> list = ctx.conditionalAndExpression();
-        IntASTStatement root = visitConditionalAndExpression(list.get(0));
-        for (int i = 1; i < list.size(); i++) {
-            root.addChild(new IntASTOperator("||"));
-            root.addChild(visitConditionalAndExpression(list.get(i)));
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitConditionalAndExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator("||"));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitConditionalAndExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator("||"));
+            tmpRoot.addChild(visitConditionalAndExpression(list.get(i)));
+        } else {
+            root = visitConditionalAndExpression(list.get(0));
         }
         return root;
     }
 
     @Override
     public IntASTStatement visitConditionalAndExpression(JavaParser.ConditionalAndExpressionContext ctx) {
+        // old logic in case I broke something
+        /*
         List<JavaParser.InclusiveOrExpressionContext> list = ctx.inclusiveOrExpression();
         IntASTStatement root = visitInclusiveOrExpression(list.get(0));
         for (int i = 1; i < list.size(); i++) {
@@ -522,15 +585,51 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             root.addChild(visitInclusiveOrExpression(list.get(i)));
         }
         return root;
+        */
+        List<JavaParser.InclusiveOrExpressionContext> list = ctx.inclusiveOrExpression();
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitInclusiveOrExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator("&&"));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitInclusiveOrExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator("&&"));
+            tmpRoot.addChild(visitInclusiveOrExpression(list.get(i)));
+        } else {
+            root = visitInclusiveOrExpression(list.get(0));
+        }
+        return root;
     }
 
     @Override
     public IntASTStatement visitInclusiveOrExpression(JavaParser.InclusiveOrExpressionContext ctx) {
         List<JavaParser.ExclusiveOrExpressionContext> list = ctx.exclusiveOrExpression();
-        IntASTStatement root = visitExclusiveOrExpression(list.get(0));
-        for (int i = 1; i < list.size(); i++) {
-            root.addChild(new IntASTOperator("|"));
-            root.addChild(visitExclusiveOrExpression(list.get(i)));
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitExclusiveOrExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator("|"));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitExclusiveOrExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator("|"));
+            tmpRoot.addChild(visitExclusiveOrExpression(list.get(i)));
+        } else {
+            root = visitExclusiveOrExpression(list.get(0));
         }
         return root;
     }
@@ -538,10 +637,24 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitExclusiveOrExpression(JavaParser.ExclusiveOrExpressionContext ctx) {
         List<JavaParser.AndExpressionContext> list = ctx.andExpression();
-        IntASTStatement root = visitAndExpression(list.get(0));
-        for (int i = 1; i < list.size(); i++) {
-            root.addChild(new IntASTOperator("^"));
-            root.addChild(visitAndExpression(list.get(i)));
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitAndExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator("^"));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitAndExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator("^"));
+            tmpRoot.addChild(visitAndExpression(list.get(i)));
+        } else {
+            root = visitAndExpression(list.get(0));
         }
         return root;
     }
@@ -549,20 +662,32 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitAndExpression(JavaParser.AndExpressionContext ctx) {
         List<JavaParser.EqualityExpressionContext> list = ctx.equalityExpression();
-        IntASTStatement root = visitEqualityExpression(list.get(0));
-        for (int i = 1; i < list.size(); i++) {
-            root.addChild(new IntASTOperator("&"));
-            root.addChild(visitEqualityExpression(list.get(i)));
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitEqualityExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator("&"));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitEqualityExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator("&"));
+            tmpRoot.addChild(visitEqualityExpression(list.get(i)));
+        } else {
+            root = visitEqualityExpression(list.get(0));
         }
         return root;
     }
 
     @Override
     public IntASTStatement visitEqualityExpression(JavaParser.EqualityExpressionContext ctx) {
-        // slightly more complicated since "==" and "!=" are used
-        // at the same time here. have to loop through the entire
-        // children list in order to convert and preserve the
-        // operations
+        // old logic in case I broke something
+        /*
         List<ParseTree> nodes = ctx.children;
         IntASTStatement root = visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(0));
         for (int i = 1; i < nodes.size(); i += 2) {
@@ -572,20 +697,54 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             root.addChild(visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(i+1)));
         }
         return root;
+         */
+        // slightly more complicated since "==" and "!=" are used
+        // at the same time here. have to loop through the entire
+        // children list in order to convert and preserve the
+        // operations
+        List<ParseTree> nodes = ctx.children;
+        IntASTStatement root;
+        if (nodes.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < nodes.size() - 2; i += 2) {
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                // get the "==" or "!=" operator
+                tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+                // add the next expression
+                tmp.addChild(visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(i+1)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+            tmpRoot.addChild(visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(i+1)));
+        } else {
+            root = visitInstanceOfExpression((JavaParser.InstanceOfExpressionContext) nodes.get(0));
+        }
+        return root;
     }
 
     @Override
     public IntASTStatement visitInstanceOfExpression(JavaParser.InstanceOfExpressionContext ctx) {
-        IntASTStatement root = visitRelationalExpression(ctx.relationalExpression());
+        IntASTStatement root;
         if (ctx.INSTANCEOF() != null) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitRelationalExpression(ctx.relationalExpression()));
             root.addChild(new IntASTOperator("instanceof"));
             root.addChild(visitType(ctx.type()));
+        } else {
+            root = visitRelationalExpression(ctx.relationalExpression());
         }
         return root;
     }
 
     @Override
     public IntASTStatement visitRelationalExpression(JavaParser.RelationalExpressionContext ctx) {
+        // old logic in case I broke something
+        /*
         List<JavaParser.ShiftExpressionContext> list = ctx.shiftExpression();
         List<JavaParser.RelationalOpContext> ops = ctx.relationalOp();
         IntASTStatement root = visitShiftExpression(list.get(0));
@@ -594,17 +753,54 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             root.addChild(visitShiftExpression(list.get(i)));
         }
         return root;
+         */
+        List<JavaParser.ShiftExpressionContext> list = ctx.shiftExpression();
+        List<JavaParser.RelationalOpContext> ops = ctx.relationalOp();
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitShiftExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                tmpRoot.addChild(new IntASTOperator(ops.get(i-1).getText()));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitShiftExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator(ops.get(i-1).getText()));
+            tmpRoot.addChild(visitShiftExpression(list.get(i)));
+        } else {
+            root = visitShiftExpression(list.get(0));
+        }
+        return root;
     }
 
     @Override
     public IntASTStatement visitShiftExpression(JavaParser.ShiftExpressionContext ctx) {
         List<JavaParser.AdditiveExpressionContext> list = ctx.additiveExpression();
         List<JavaParser.ShiftOpContext> ops = ctx.shiftOp();
-        IntASTStatement root = visitAdditiveExpression(list.get(0));
-        for (int i = 1; i < list.size(); i++) {
-            // TODO since Python does not have ">>>" we have to find some way to convert unsigned bitwise right-shift
-            root.addChild(new IntASTOperator(ops.get(i-1).getText()));
-            root.addChild(visitAdditiveExpression(list.get(i)));
+        IntASTStatement root;
+        if (list.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitAdditiveExpression(list.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < list.size() - 1; i++) {
+                // TODO since Python does not have ">>>" we have to find some way to convert unsigned bitwise right-shift
+                tmpRoot.addChild(new IntASTOperator(ops.get(i-1).getText()));
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                tmp.addChild(visitAdditiveExpression(list.get(i)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator(ops.get(i-1).getText()));
+            tmpRoot.addChild(visitAdditiveExpression(list.get(i)));
+        } else {
+            root = visitAdditiveExpression(list.get(0));
         }
         return root;
     }
@@ -616,12 +812,26 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         // children list in order to convert and preserve the
         // operations
         List<ParseTree> nodes = ctx.children;
-        IntASTStatement root = visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(0));
-        for (int i = 1; i < nodes.size(); i += 2) {
-            // get the "+" or "-" operator
-            root.addChild(new IntASTOperator(nodes.get(i).getText()));
-            // add the next expression
-            root.addChild(visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(i+1)));
+        IntASTStatement root;
+        if (nodes.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < nodes.size() - 2; i += 2) {
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                // get the "+" or "-" operator
+                tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+                // add the next expression
+                tmp.addChild(visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(i+1)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+            tmpRoot.addChild(visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(i+1)));
+        } else {
+            root = visitMultiplicativeExpression((JavaParser.MultiplicativeExpressionContext) nodes.get(0));
         }
         return root;
     }
@@ -633,12 +843,26 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         // children list in order to convert and preserve the
         // operations
         List<ParseTree> nodes = ctx.children;
-        IntASTStatement root = visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(0));
-        for (int i = 1; i < nodes.size(); i += 2) {
-            // get the "*", "/" or "%" operator
-            root.addChild(new IntASTOperator(nodes.get(i).getText()));
-            // add the next expression
-            root.addChild(visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(i+1)));
+        IntASTStatement root;
+        if (nodes.size() > 1) {
+            root = new IntASTBinaryExpression();
+            root.addChild(visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(0)));
+            IntASTStatement tmpRoot = root;
+            int i;
+            for (i = 1; i < nodes.size() - 2; i += 2) {
+                IntASTStatement tmp = new IntASTBinaryExpression();
+                // get the "*", "/" or "%" operator
+                tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+                // add the next expression
+                tmp.addChild(visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(i+1)));
+
+                tmpRoot.addChild(tmp);
+                tmpRoot = tmp;
+            }
+            tmpRoot.addChild(new IntASTOperator(nodes.get(i).getText()));
+            tmpRoot.addChild(visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(i+1)));
+        } else {
+            root = visitUnaryExpression((JavaParser.UnaryExpressionContext) nodes.get(0));
         }
         return root;
     }
@@ -646,7 +870,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitUnaryExpression(JavaParser.UnaryExpressionContext ctx) {
         if (ctx.unaryExpressionNotPlusMinus() == null) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
+            IntASTUnaryExpression root = new IntASTUnaryExpression();
             if (ctx.ADD() != null) {
                 root.addChild(new IntASTOperator("+"));
             } else if (ctx.SUB() != null) {
@@ -666,7 +890,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTStatement visitUnaryExpressionNotPlusMinus(JavaParser.UnaryExpressionNotPlusMinusContext ctx) {
         if (ctx.unaryExpression() != null) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
+            IntASTUnaryExpression root = new IntASTUnaryExpression();
             if (ctx.TILDE() != null) {
                 root.addChild(new IntASTOperator("~"));
             } else {
@@ -744,10 +968,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTStatement visitParExpression(JavaParser.ParExpressionContext ctx) {
-        IntASTStatementExpression root = new IntASTStatementExpression();
-        root.addChild(new IntASTOperator("("));
+        IntASTParExpression root = new IntASTParExpression();
         root.addChild(visitExpression(ctx.expression()));
-        root.addChild(new IntASTOperator(")"));
         return root;
     }
 
@@ -829,6 +1051,9 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
         return root;
     }
+
+
+
 
     @Override
     public IntASTClass visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {

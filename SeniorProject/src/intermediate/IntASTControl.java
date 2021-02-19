@@ -13,11 +13,11 @@ public class IntASTControl extends AbstractIntASTBranchNode implements IntASTSta
     public void addChild(IntASTNode child) {
         if (child == null) {
             return;
-        } else if (!(child instanceof IntASTExpression) ||
+        } else if (!(child instanceof IntASTExpression) &&
                 !(child instanceof IntASTIdentifier)) {
             throw new IllegalArgumentException("IntASTControl does not support children of type \""
                     + child.getClass().getName() + "\"");
-        } else if (super.text.equals("return")) {
+        } else if (super.text.equals("return") || super.text.equals("throw")) {
             // have a return statement, so child must be an expression
             if (child instanceof IntASTExpression) {
                 // ensure only one expression is stored
@@ -25,11 +25,11 @@ public class IntASTControl extends AbstractIntASTBranchNode implements IntASTSta
                     child.setParent(this);
                     super.children.add(child);
                 } else {
-                    throw new IllegalArgumentException("A return statement can only have one statement");
+                    throw new IllegalArgumentException("A " + super.text + " statement can only have one statement");
                 }
             } else {
                 throw new IllegalArgumentException("IntASTControl does not support children of type \""
-                        + child.getClass().getName() + "\" when representing a return statement");
+                        + child.getClass().getName() + "\" when representing a " + super.text + " statement");
             }
         } else if (super.text.equals("break") || super.text.equals("continue")) {
             // have a break or continue statement, so child must be an identifier

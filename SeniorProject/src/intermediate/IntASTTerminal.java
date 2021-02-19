@@ -25,6 +25,11 @@ public interface IntASTTerminal extends IntASTExpression {
     }
 
     @Override
+    default List<IntASTNode> getChildren() {
+        return Collections.emptyList();
+    }
+
+    @Override
     default <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
         return Collections.emptyList();
     }

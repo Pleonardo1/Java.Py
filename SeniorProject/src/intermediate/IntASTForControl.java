@@ -50,7 +50,7 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
                 }
             } else {
                 // have regular for control
-                if (child instanceof IntASTExpressionList) {
+                if (child instanceof IntASTExpression) {
                     child.setParent(this);
                     super.children.add(child);
                 } else {

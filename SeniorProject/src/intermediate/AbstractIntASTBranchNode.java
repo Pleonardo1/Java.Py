@@ -41,6 +41,11 @@ public abstract class AbstractIntASTBranchNode extends AbstractIntASTNode {
     }
 
     @Override
+    public List<IntASTNode> getChildren() {
+        return new ArrayList<>(this.children);
+    }
+
+    @Override
     public <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
         ArrayList<T> out = new ArrayList<>();
         // add all child nodes of type T to the output

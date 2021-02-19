@@ -50,9 +50,7 @@ public interface IntASTNode {
      *
      * @return A list of all children of this node
      */
-    default List<IntASTNode> getChildren() {
-        return getChildren(IntASTNode.class);
-    }
+    List<IntASTNode> getChildren();
 
     /**
      * Returns a list of all children of supertype {@code T}. If no

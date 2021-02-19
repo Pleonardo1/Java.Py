@@ -1,6 +1,6 @@
 package intermediate;
 
-public class IntASTExpressionList extends AbstractIntASTBranchNode implements IntASTStatement {
+public class IntASTExpressionList extends AbstractIntASTBranchNode implements IntASTExpression {
     public IntASTExpressionList() {
         super("");
     }

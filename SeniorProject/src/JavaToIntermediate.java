@@ -326,19 +326,19 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTStatement visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
+    public IntASTExpression visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
         // TODO filter out simple variable declarations while leaving assignments
         return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
     }
 
     @Override
-    public IntASTStatement visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
+    public IntASTExpression visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
         // ignore variable modifiers and type
         return visitVariableDeclarators(ctx.variableDeclarators());
     }
 
     @Override
-    public IntASTStatement visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
+    public IntASTExpression visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
         IntASTExpressionList root = new IntASTExpressionList();
         List<JavaParser.VariableDeclaratorContext> list = ctx.variableDeclarator();
         int i;
@@ -423,14 +423,12 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             }
             // TODO add else logic
             return root;
-
         } else if (ctx.FOR() != null) {
             // for loop
             IntASTFor root = new IntASTFor();
             root.addChild(visitForControl(ctx.forControl()));
             root.addChild(visitStatement(ctx.statement(0)));
             return root;
-
         } else if (ctx.WHILE() != null) {
             // while loop or do-while loop
             // TODO create IntASTWhile class
@@ -781,34 +779,36 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         }else {
             IntASTForControl root = new IntASTForControl();
 
-            if (ctx.forInit() != null) root.addChild(visitForInit(ctx.forInit()));
-            if (ctx.expression() != null) root.addChild(visitExpression(ctx.expression()));
-            if (ctx.forUpdate() != null) root.addChild(visitForUpdate(ctx.forUpdate()));
+            // use an empty expression list if no for initializer exists
+            root.addChild((ctx.forInit() != null) ? visitForInit(ctx.forInit()) : new IntASTExpressionList());
+
+            // use a "true" literal if no loop condition exists
+            root.addChild((ctx.expression() != null) ? visitExpression(ctx.expression()) : new IntASTLiteral("true"));
+
+            // use an empty expression list if no for update exists
+            root.addChild((ctx.forUpdate() != null) ? visitForUpdate(ctx.forUpdate()) : new IntASTExpressionList());
+
             return root;
         }
     }
 
 
     @Override
-    public IntASTForControl visitForInit(JavaParser.ForInitContext ctx) {
-
-        IntASTForControl root = new IntASTForControl();
-        root.addChild(visitLocalVariableDeclaration(ctx.localVariableDeclaration()));
-        root.addChild(visitExpressionList(ctx.expressionList()));
-
-        return root;
+    public IntASTExpression visitForInit(JavaParser.ForInitContext ctx) {
+        if (ctx.localVariableDeclaration() != null) {
+            return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
+        } else {
+            return visitExpressionList(ctx.expressionList());
+        }
     }
 
     @Override
-    public IntASTForControl visitForUpdate(JavaParser.ForUpdateContext ctx) {
-        IntASTForControl root = new IntASTForControl();
-        root.addChild(visitExpressionList(ctx.expressionList()));
-        return root;
+    public IntASTExpression visitForUpdate(JavaParser.ForUpdateContext ctx) {
+        return visitExpressionList(ctx.expressionList());
     }
 
     @Override
     public IntASTExpressionList visitExpressionList(JavaParser.ExpressionListContext ctx) {
-
         List<JavaParser.ExpressionContext> list = ctx.expression();
         IntASTExpressionList root = new IntASTExpressionList();
 

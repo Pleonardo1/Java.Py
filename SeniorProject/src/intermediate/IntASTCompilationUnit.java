@@ -55,7 +55,7 @@ public class IntASTCompilationUnit extends AbstractIntASTBranchNode {
             child.setParent(this);
             super.children.add(child);
         } else {
-            throw new IllegalArgumentException("intermediate.IntASTCompilationUnit does not support children of type \""
+            throw new IllegalArgumentException("IntASTCompilationUnit does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
     }

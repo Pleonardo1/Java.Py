@@ -6,11 +6,20 @@ class MyNum {
         String name = "joe";
 
         for (String i : args) {
+            name += i;
+            pi = num + pi;
+        }
 
+        for (int j = 0, k = 1; pi > num; name += "", isX = !isX) {
+            pi -= -1.0;
         }
 
         if (pi < num) {
             pi = num;
+        } else if (pi < num) {
+            pi = -num;
+        } else {
+            pi = 0;
         }
     }
 }

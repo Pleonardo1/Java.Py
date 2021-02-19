@@ -413,8 +413,17 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             throw new UnsupportedOperationException("assert statements not supported");
         } else if (ctx.IF() != null) {
             // if statement
-            // TODO create IntASTIf class
-            throw new UnsupportedOperationException();
+            IntASTIf root = new IntASTIf();
+            root.addChild(visitParExpression(ctx.parExpression()));
+
+            List<JavaParser.StatementContext> list = ctx.statement();
+
+            for (int i = 0; i < list.size(); i++) {
+                root.addChild(visitStatement(list.get(i)));
+            }
+            // TODO add else logic
+            return root;
+
         } else if (ctx.FOR() != null) {
             // for loop
             IntASTFor root = new IntASTFor();
@@ -768,8 +777,46 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         // TODO add ForControl Conversion
         if (ctx.enhancedForControl() != null) {
             return visitEnhancedForControl(ctx.enhancedForControl());
+
+        }else {
+            IntASTForControl root = new IntASTForControl();
+
+            if (ctx.forInit() != null) root.addChild(visitForInit(ctx.forInit()));
+            if (ctx.expression() != null) root.addChild(visitExpression(ctx.expression()));
+            if (ctx.forUpdate() != null) root.addChild(visitForUpdate(ctx.forUpdate()));
+            return root;
         }
-        return null;
+    }
+
+
+    @Override
+    public IntASTForControl visitForInit(JavaParser.ForInitContext ctx) {
+
+        IntASTForControl root = new IntASTForControl();
+        root.addChild(visitLocalVariableDeclaration(ctx.localVariableDeclaration()));
+        root.addChild(visitExpressionList(ctx.expressionList()));
+
+        return root;
+    }
+
+    @Override
+    public IntASTForControl visitForUpdate(JavaParser.ForUpdateContext ctx) {
+        IntASTForControl root = new IntASTForControl();
+        root.addChild(visitExpressionList(ctx.expressionList()));
+        return root;
+    }
+
+    @Override
+    public IntASTExpressionList visitExpressionList(JavaParser.ExpressionListContext ctx) {
+
+        List<JavaParser.ExpressionContext> list = ctx.expression();
+        IntASTExpressionList root = new IntASTExpressionList();
+
+        for (int i = 0; i < list.size(); i++) {
+            root.addChild(visitExpression(list.get(i)));
+        }
+
+        return root;
     }
 
     @Override

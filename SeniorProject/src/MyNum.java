@@ -8,5 +8,9 @@ class MyNum {
         for (String i : args) {
 
         }
+
+        if (pi < num) {
+            pi = num;
+        }
     }
 }

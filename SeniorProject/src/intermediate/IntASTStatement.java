@@ -7,4 +7,5 @@ package intermediate;
  * statements and loops.
  */
 public interface IntASTStatement extends IntASTNode {
+    
 }

@@ -403,6 +403,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTStatement visitStatement(JavaParser.StatementContext ctx) {
+
         // go down the list of this rule's possibilities
         if (ctx.block() != null) {
             // block statement
@@ -416,8 +417,11 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             throw new UnsupportedOperationException();
         } else if (ctx.FOR() != null) {
             // for loop
-            // TODO create IntASTFor class
-            throw new UnsupportedOperationException();
+            IntASTFor root = new IntASTFor();
+            root.addChild(visitForControl(ctx.forControl()));
+            root.addChild(visitStatement(ctx.statement(0)));
+            return root;
+
         } else if (ctx.WHILE() != null) {
             // while loop or do-while loop
             // TODO create IntASTWhile class
@@ -762,11 +766,22 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTForControl visitForControl(JavaParser.ForControlContext ctx) {
         // TODO add ForControl Conversion
+        if (ctx.enhancedForControl() != null) {
+            return visitEnhancedForControl(ctx.enhancedForControl());
+        }
         return null;
     }
 
+    @Override
+    public IntASTForControl visitEnhancedForControl(JavaParser.EnhancedForControlContext ctx) {
 
+        IntASTForControl root = new IntASTForControl();
+        root.addChild(new IntASTIdentifier(ctx.Identifier().getText()));
+        root.addChild(new IntASTOperator(":"));
+        root.addChild(visitExpression(ctx.expression()));
 
+        return root;
+    }
 
     @Override
     public IntASTClass visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {

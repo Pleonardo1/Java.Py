@@ -28,7 +28,7 @@ public class IntASTFor extends AbstractIntASTBranchNode implements IntASTStateme
                     !(super.children.get(super.children.size()-1) instanceof IntASTStatement)) {
                 // no existing loop body
                 child.setParent(this);
-                super.children.add(super.children.size()-1, child);
+                super.children.add(child);
             } else {
                 // this for loop already has its body
                 throw new IllegalArgumentException("Cannot have more than body per for loop");

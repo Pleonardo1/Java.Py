@@ -4,9 +4,9 @@ class MyNum {
         double pi = 3.14;
         boolean isX = true;
         String name = "joe";
-    }
 
-    public void print(int x, int y, int z) {
-        x = y + z;
+        for (String i : args) {
+
+        }
     }
 }

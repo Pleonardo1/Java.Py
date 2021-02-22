@@ -1,10 +1,8 @@
  class MyNum:
  	 def main (self):
- 	 	 isX=True
- 	 	 name="joe"
- 	 	 	 num=5
- 	 	 	 pi=3.14
- 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 
+ 	 	 num1
+ num2
+ 	 	 	 	 	 	 	 	 	 	 	 	 
 
  m = MyNum() 
  m.main()

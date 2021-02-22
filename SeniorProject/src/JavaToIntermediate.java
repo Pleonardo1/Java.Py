@@ -406,7 +406,21 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTStatement visitStatement(JavaParser.StatementContext ctx) {
 
         // go down the list of this rule's possibilities
-        if (ctx.block() != null) {
+        if (ctx.TRY() != null) {
+            // try block or try-with-resources block
+            // TODO determine why try only works if checked before ctx.block()
+            IntASTTry root = new IntASTTry();
+            root.addChild(visitBlock(ctx.block()));
+
+            if (ctx.catches() != null) {
+                root.addChild(visitCatches(ctx.catches()));
+            }
+            if (ctx.finallyBlock() != null) {
+                root.addChild(visitFinallyBlock(ctx.finallyBlock()));
+            }
+            return root;
+
+        } else if (ctx.block() != null) {
             // block statement
             return visitBlock(ctx.block());
         } else if (ctx.ASSERT() != null) {
@@ -419,10 +433,11 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
             List<JavaParser.StatementContext> list = ctx.statement();
 
-            for (int i = 0; i < list.size(); i++) {
-                root.addChild(visitStatement(list.get(i)));
+            for (JavaParser.StatementContext statementContext : list) {
+                root.addChild(visitStatement(statementContext));
             }
             return root;
+
         } else if (ctx.FOR() != null) {
             // for loop
             IntASTFor root = new IntASTFor();
@@ -436,8 +451,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
             List<JavaParser.StatementContext> list = ctx.statement();
 
-            for (int i = 0; i < list.size(); i++) {
-                root.addChild(visitStatement(list.get(i)));
+            for (JavaParser.StatementContext statementContext : list) {
+                root.addChild(visitStatement(statementContext));
             }
 
             root.addChild(visitParExpression(ctx.parExpression()));
@@ -450,22 +465,21 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
             List<JavaParser.StatementContext> list = ctx.statement();
 
-            for (int i = 0; i < list.size(); i++) {
-                root.addChild(visitStatement(list.get(i)));
+            for (JavaParser.StatementContext statementContext : list) {
+                root.addChild(visitStatement(statementContext));
             }
             return root;
 
-        } else if (ctx.TRY() != null) {
-            // try block or try-with-resources block
-            // TODO create IntASTTry class
-            throw new UnsupportedOperationException();
+
         } else if (ctx.SWITCH() != null) {
             // switch block
             // TODO create IntASTSwitch class
             throw new UnsupportedOperationException();
+
         } else if (ctx.SYNCHRONIZED() != null) {
             // TODO add support for synchronized blocks? no idea how they'd translate though
             throw new UnsupportedOperationException("synchronized blocks not supported");
+
         } else if (ctx.RETURN() != null) {
             // return statement
             IntASTControl root = new IntASTControl ("return");
@@ -511,6 +525,55 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             return null;
         }
     }
+
+    @Override
+    public IntASTBlock visitFinallyBlock (JavaParser.FinallyBlockContext ctx) {
+        return visitBlock(ctx.block());
+    }
+
+    @Override
+    public IntASTCatchClause visitCatches (JavaParser.CatchesContext ctx) {
+        IntASTCatchClause root = new IntASTCatchClause();
+        List<JavaParser.CatchClauseContext> list = ctx.catchClause();
+
+        for (JavaParser.CatchClauseContext catchClauseContext : list) {
+            root.addChild(visitCatchClause(catchClauseContext));
+        }
+
+        return root;
+    }
+
+    @Override
+    public IntASTCatchClause visitCatchClause (JavaParser.CatchClauseContext ctx) {
+        IntASTCatchClause root = new IntASTCatchClause();
+
+        root.addChild(visitCatchType(ctx.catchType()));
+        root.addChild(new IntASTIdentifier(ctx.Identifier().getText()));
+        root.addChild(visitBlock(ctx.block()));
+
+        return root;
+    }
+
+    // TODO Complete catchType & qualifiedName functionality
+    /*
+    @Override
+    public IntASTCatchClause visitCatchType (JavaParser.CatchTypeContext ctx) {
+
+        IntASTCatchClause root = new IntASTCatchClause();
+        List <JavaParser.QualifiedNameContext> list = ctx.qualifiedName();
+
+        for (JavaParser.QualifiedNameContext qualName : list) {
+            root.addChild(visitQualifiedName(qualName));
+        }
+
+        return root;
+    }
+
+    @Override
+    public IntASTIdentifier visitQualifiedName (JavaParser.QualifiedNameContext ctx) {
+        return null;
+    }*/
+
 
     @Override
     public IntASTStatement visitStatementExpression(JavaParser.StatementExpressionContext ctx) {
@@ -1034,8 +1097,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         List<JavaParser.ExpressionContext> list = ctx.expression();
         IntASTExpressionList root = new IntASTExpressionList();
 
-        for (int i = 0; i < list.size(); i++) {
-            root.addChild(visitExpression(list.get(i)));
+        for (JavaParser.ExpressionContext expressionContext : list) {
+            root.addChild(visitExpression(expressionContext));
         }
 
         return root;

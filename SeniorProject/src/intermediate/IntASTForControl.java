@@ -1,6 +1,10 @@
 package intermediate;
+import java.util.List;
 
 public class IntASTForControl extends AbstractIntASTBranchNode {
+
+    private boolean isEnhanced = false;
+
     public IntASTForControl() {
         super("");
     }
@@ -24,6 +28,7 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
             if (super.children.get(0) instanceof IntASTIdentifier) {
                 // have enhanced for control
                 if (child.getText().equals(":")) {
+                    isEnhanced = true;
                     child.setParent(this);
                     super.children.add(child);
                 } else {
@@ -64,4 +69,25 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
                     + child.getClass().getName() + "\"");
         }
     }
+
+    public boolean isEnhanced (boolean enhanced) {
+        return enhanced;
+    }
+
+    public List<IntASTIdentifier> getIdentifier() {
+        return getChildren(IntASTIdentifier.class);
+    }
+
+    public IntASTIdentifier getIdentifier(int i) {
+        return getChild(i, IntASTIdentifier.class);
+    }
+    
+    public List<IntASTExpression> getExpression() {
+        return getChildren(IntASTExpression.class);
+    }
+    
+    public IntASTExpression getExpression(int i) {
+        return getChild(i, IntASTExpression.class);
+    }
+
 }

@@ -1,5 +1,7 @@
 package intermediate;
 
+import java.util.List;
+
 public class IntASTUnaryExpression extends AbstractIntASTBranchNode implements IntASTExpression {
     public IntASTUnaryExpression() {
         super("");
@@ -36,5 +38,21 @@ public class IntASTUnaryExpression extends AbstractIntASTBranchNode implements I
             throw new IllegalArgumentException("IntASTUnaryExpression does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
+    }
+    
+    public IntASTExpression getExpression(int i) {
+        return getChild(i, IntASTExpression.class);
+    }
+    
+    public List<IntASTExpression> getExpression() {
+        return getChildren(IntASTExpression.class);
+    }
+    
+    public IntASTOperator getOperator() {
+        return getChild(0, IntASTOperator.class);
+    }
+    
+    public IntASTExpression getExpressionNotOperator() {
+        return getChild(0, IntASTExpression.class, IntASTOperator.class);
     }
 }

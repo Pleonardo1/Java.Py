@@ -1,5 +1,7 @@
 package intermediate;
 
+import java.util.List;
+
 /**
  * Intermediate AST node that represents an expression
  * that is a single statement, such as
@@ -36,5 +38,13 @@ public class IntASTStatementExpression extends AbstractIntASTBranchNode implemen
             throw new IllegalArgumentException("IntASTStatementExpression does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
+    }
+    
+    public IntASTExpression getExpression(int i) {
+        return getChild(i, IntASTExpression.class);
+    }
+    
+    public List<IntASTExpression> getExpression() {
+        return getChildren(IntASTExpression.class);
     }
 }

@@ -22,4 +22,8 @@ public class IntASTParExpression extends AbstractIntASTBranchNode implements Int
                     + child.getClass().getName() + "\"");
         }
     }
+    
+    public IntASTExpression getExpression() {
+        return getChild(0, IntASTExpression.class);
+    }
 }

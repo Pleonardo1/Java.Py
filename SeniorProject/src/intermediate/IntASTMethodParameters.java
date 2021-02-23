@@ -1,5 +1,7 @@
 package intermediate;
 
+import java.util.List;
+
 /**
  * Intermediate AST node that represents a set of method parameters.
  * May be used to represent the formal parameters of a method
@@ -18,12 +20,13 @@ public class IntASTMethodParameters extends AbstractIntASTBranchNode {
         } else if (child instanceof IntASTIdentifier) {
             // adding a method parameter
             child.setParent(this);
-            if (super.children.isEmpty() || !super.children.get(super.children.size()-1).getText().equals("...")) {
+            if (super.children.isEmpty() ||
+                    !super.children.get(super.children.size()-1).getText().equals("...")) {
                 super.children.add(child);
             } else {
                 super.children.add(super.children.size()-1, child);
             }
-        } else if (child.getText().equals("...")) {
+        } else if (child instanceof IntASTOperator && child.getText().equals("...")) {
             // adding an ellipsis (for variable arguments)
             // ensure one does not already exist
             if (super.children.isEmpty() || !super.children.get(super.children.size()-1).getText().equals("...")) {
@@ -36,5 +39,21 @@ public class IntASTMethodParameters extends AbstractIntASTBranchNode {
             throw new IllegalArgumentException("intermediate.IntASTMethodParameters does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
+    }
+    
+    public boolean isVarargs() {
+        return super.children.get(super.children.size()-1).getText().equals("...");
+    }
+    
+    public IntASTIdentifier getIdentifier(int i) {
+        return getChild(i, IntASTIdentifier.class);
+    }
+    
+    public List<IntASTIdentifier> getIdentifier() {
+        return getChildren(IntASTIdentifier.class);
+    }
+    
+    public IntASTOperator getOperator() {
+        return getChild(0, IntASTOperator.class);
     }
 }

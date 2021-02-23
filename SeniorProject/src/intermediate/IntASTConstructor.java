@@ -55,4 +55,12 @@ public class IntASTConstructor extends AbstractIntASTBranchNode implements IntAS
             throw new UnsupportedOperationException("Constructors cannot be static members");
         }
     }
+
+    public IntASTMethodParameters getMethodParameters() {
+        return getChild(0, IntASTMethodParameters.class);
+    }
+    
+    public IntASTBlock getBlock() {
+        return getChild(0, IntASTBlock.class);
+    }
 }

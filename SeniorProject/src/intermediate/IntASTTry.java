@@ -1,4 +1,5 @@
 package intermediate;
+import java.util.List;
 
 public class IntASTTry extends AbstractIntASTBranchNode implements IntASTStatement {
     public IntASTTry() {super("");}
@@ -29,4 +30,21 @@ public class IntASTTry extends AbstractIntASTBranchNode implements IntASTStateme
                     + child.getClass().getName() + "\"");
         }
     }
+    
+    public boolean hasFinally() {
+        return super.children.size() == 3;
+    }
+    
+    public List<IntASTBlock> getBlocks () {
+        return getChildren(IntASTBlock.class);
+    }
+    
+    public IntASTBlock getBlock (int i) {
+        return getChild(i, IntASTBlock.class);
+    }
+    
+    public IntASTCatches getCatches () {
+        return getChild(0, IntASTCatches.class);
+    }
+    
 }

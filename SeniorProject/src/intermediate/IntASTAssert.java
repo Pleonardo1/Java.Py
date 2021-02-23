@@ -2,8 +2,8 @@ package intermediate;
 
 import java.util.List;
 
-public class IntASTExpressionList extends AbstractIntASTBranchNode implements IntASTExpression {
-    public IntASTExpressionList() {
+public class IntASTAssert extends AbstractIntASTBranchNode implements IntASTExpression {
+    public IntASTAssert() {
         super("");
     }
 
@@ -12,19 +12,19 @@ public class IntASTExpressionList extends AbstractIntASTBranchNode implements In
         if (child == null) {
             return;
         } else if (child instanceof IntASTExpression) {
-            // add an expression to the list
+            // TODO refine number of expressions in an assertion
             child.setParent(this);
             super.children.add(child);
         } else {
-            throw new IllegalArgumentException("IntASTExpressionList does not support children of type \""
+            throw new IllegalArgumentException("IntASTAssert does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
     }
-    
+
     public IntASTExpression getExpression(int i) {
         return getChild(i, IntASTExpression.class);
     }
-    
+
     public List<IntASTExpression> getExpression() {
         return getChildren(IntASTExpression.class);
     }

@@ -28,7 +28,7 @@ public class IntASTTernaryExpression extends AbstractIntASTBranchNode implements
                 } else {
                     // ensure only 3 expressions exist, and that they
                     // come at indexes 0, 2, and 4
-                    if (super.children.size() - getChildCount(IntASTOperator.class) < 3) {
+                    if (getChildCount(IntASTExpression.class, IntASTOperator.class) < 3) {
                         // have room for an expression
                         child.setParent(this);
                         super.children.add(child);
@@ -72,8 +72,7 @@ public class IntASTTernaryExpression extends AbstractIntASTBranchNode implements
         }
         // make sure that expressions and operators come in the right order
         List<IntASTOperator> ops = super.getChildren(IntASTOperator.class);
-        List<IntASTExpression> exprs = super.getChildren(IntASTExpression.class);
-        exprs.removeAll(ops);
+        List<IntASTExpression> exprs = super.getChildren(IntASTExpression.class, IntASTOperator.class);
         super.children.clear();
 
         int o = 0, e = 0;
@@ -99,5 +98,29 @@ public class IntASTTernaryExpression extends AbstractIntASTBranchNode implements
             super.children.add(ops.get(o));
             o++;
         }
+    }
+
+    public IntASTExpression getExpression(int i) {
+        return getChild(i, IntASTExpression.class);
+    }
+    
+    public List<IntASTExpression> getExpression() {
+        return getChildren(IntASTExpression.class);
+    }
+    
+    public IntASTOperator getOperator(int i) {
+        return getChild(i, IntASTOperator.class);
+    }
+    
+    public List<IntASTOperator> getOperator() {
+        return getChildren(IntASTOperator.class);
+    }
+    
+    public IntASTExpression getExpressionNotOperator(int i) {
+        return getChild(i, IntASTExpression.class, IntASTOperator.class);
+    }
+    
+    public List<IntASTExpression> getExpressionNotOperator() {
+        return getChildren(IntASTExpression.class, IntASTOperator.class);
     }
 }

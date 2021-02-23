@@ -64,4 +64,12 @@ public class IntASTMethod extends AbstractIntASTBranchNode implements  IntASTMem
     public void setAbstract(boolean isAbstract) {
         this.isAbstract = isAbstract;
     }
+
+    public IntASTMethodParameters getMethodParameters() {
+        return getChild(0, IntASTMethodParameters.class);
+    }
+    
+    public IntASTBlock getBlock() {
+        return getChild(0, IntASTBlock.class);
+    }
 }

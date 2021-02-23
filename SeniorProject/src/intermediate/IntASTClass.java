@@ -20,23 +20,18 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
         // check what kind of child is being added
         if (child == null) {
             return;
-        } else if (child instanceof IntASTInherit) {
-            // adding a class to inherit from, so add it before the
-            // class's member declarations
-            child.setParent(this);
+        } else if (child instanceof IntASTTypeList) {
+            // adding a list of inherited classes, so ensure one doesn't
+            // already exist
             if (super.children.isEmpty() ||
-                    (super.children.get(super.children.size() - 1) instanceof IntASTInherit)) {
-                // insert normally
-                super.children.add(child);
+                    !(super.children.get(0) instanceof IntASTTypeList)) {
+                // no existing inheritance list, so insert at the beginning
+                child.setParent(this);
+                super.children.add(0, child);
             } else {
-                // find the last instance of an inheritance declaration
-                // and insert the new node after that
-                for (int i = 0; i < super.children.size(); i++) {
-                    if (super.children.get(i) instanceof IntASTInherit) {
-                        super.children.add(i + 1, child);
-                        break;
-                    }
-                }
+                // this class already has an inheritance list defined, so
+                // throw an exception
+                throw new IllegalArgumentException("Cannot have more than one list of inherited types per class declaration");
             }
         } else if (child instanceof IntASTClassBody) {
             // adding the class's body, so ensure one doesn't
@@ -73,5 +68,13 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
 
     public void setAbstract(boolean isAbstract) {
         this.isAbstract = isAbstract;
+    }
+    
+    public IntASTTypeList getTypeList() {
+        return getChild(0, IntASTTypeList.class);
+    }
+    
+    public IntASTClassBody getClassBody() {
+        return getChild(0, IntASTClassBody.class);
     }
 }

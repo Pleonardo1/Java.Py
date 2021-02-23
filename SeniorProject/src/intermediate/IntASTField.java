@@ -34,4 +34,8 @@ public class IntASTField extends AbstractIntASTBranchNode implements IntASTMembe
     public void setStatic(boolean isStatic) {
         this.isStatic = isStatic;
     }
+
+    public IntASTStatement getStatement() {
+        return getChild(0, IntASTStatement.class);
+    }
 }

@@ -49,4 +49,16 @@ public class IntASTControl extends AbstractIntASTBranchNode implements IntASTSta
             throw new IllegalStateException("Unknown control statement type: " + super.text);
         }
     }
+
+    public IntASTExpression getExpression() {
+        return getChild(0, IntASTExpression.class);
+    }
+    
+    public IntASTIdentifier getIdentifier() {
+        return getChild(0, IntASTIdentifier.class);
+    }
+    
+    public IntASTExpression getExpressionNotIdentifier() {
+        return getChild(0, IntASTExpression.class, IntASTIdentifier.class);
+    }
 }

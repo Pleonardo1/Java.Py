@@ -20,7 +20,7 @@ public interface IntASTTerminal extends IntASTExpression {
     }
 
     @Override
-    default <T extends IntASTNode> T getChild(int i, Class<? extends T> type) {
+    default <T extends IntASTNode> T getChild(int i, Class<? extends T> type, Class<? extends T> ...exclude) {
         throw new UnsupportedOperationException();
     }
 
@@ -30,7 +30,7 @@ public interface IntASTTerminal extends IntASTExpression {
     }
 
     @Override
-    default <T extends IntASTNode> List<T> getChildren(Class<? extends T> type) {
+    default <T extends IntASTNode> List<T> getChildren(Class<? extends T> type, Class<? extends T> ...exclude) {
         return Collections.emptyList();
     }
 
@@ -40,7 +40,7 @@ public interface IntASTTerminal extends IntASTExpression {
     }
 
     @Override
-    default <T extends IntASTNode> int getChildCount(Class<? extends T> type) {
+    default <T extends IntASTNode> int getChildCount(Class<? extends T> type, Class<? extends T> ...exclude) {
         return 0;
     }
 

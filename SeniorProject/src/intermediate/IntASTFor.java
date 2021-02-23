@@ -1,4 +1,5 @@
 package intermediate;
+import java.util.List;
 
 public class IntASTFor extends AbstractIntASTBranchNode implements IntASTStatement {
     public IntASTFor() {
@@ -38,4 +39,17 @@ public class IntASTFor extends AbstractIntASTBranchNode implements IntASTStateme
                     + child.getClass().getName() + "\"");
         }
     }
+
+    public IntASTForControl getForControl() {
+        return getChild(0, IntASTForControl.class);
+    }
+
+    public List<IntASTStatement> getStatement() {
+        return getChildren(IntASTStatement.class);
+    }
+    
+    public IntASTStatement getStatement(int i) {
+            return getChild(i, IntASTStatement.class);
+        }
+
 }

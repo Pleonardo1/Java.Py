@@ -35,14 +35,16 @@ public interface IntASTNode {
     /**
      * Gets the {@code i}-th child that is a subtype of {@code T},
      * if such a child exists. If no such child exists, {@code null}
-     * is returned.
+     * is returned. Optionally, certain subtypes can be excluded to
+     * get a child from a more specific list of children.
      *
      * @param i The index of the child to retrieve
      * @param type The {@code Class} object representation of {@code T}
+     * @param exclude The {@code Class} object representation(s) of the types to exclude
      * @param <T> The supertype of the target child
-     * @return The {@code i}-th child of type {@code T}
+     * @return The {@code i}-th child of type {@code T}, excluding all indicated sub-types
      */
-    <T extends IntASTNode> T getChild(int i, Class<? extends T> type);
+    <T extends IntASTNode> T getChild(int i, Class<? extends T> type, Class<? extends T> ...exclude);
 
     /**
      * Returns a list of all children of this node. If no children
@@ -54,13 +56,16 @@ public interface IntASTNode {
 
     /**
      * Returns a list of all children of supertype {@code T}. If no
-     * such children exist, an empty list is returned.
+     * such children exist, an empty list is returned. Optionally,
+     * certain subtypes can be excluded to get a more specific list
+     * of children.
      *
      * @param type The {@code Class} object representation of {@code T}
+     * @param exclude The {@code Class} object representation(s) of the types to exclude
      * @param <T> The supertype of the target children
-     * @return A list of all children of type {@code T}
+     * @return A list of all children of type {@code T}, excluding all indicated sub-types
      */
-    <T extends IntASTNode> List<T> getChildren(Class<? extends T> type);
+    <T extends IntASTNode> List<T> getChildren(Class<? extends T> type, Class<? extends T> ...exclude);
 
     /**
      * Returns the number of children to this node.
@@ -71,12 +76,15 @@ public interface IntASTNode {
 
     /**
      * Returns the number of children of supertype {@code T}.
+     * Optionally, certain subtypes can be excluded from the counting
+     * to get a more specific child count.
      *
      * @param type The {@code Class} object representation of {@code T}
+     * @param exclude The {@code Class} object representation(s) of the types to exclude
      * @param <T> The supertype of the target children
-     * @return A list of all children of type {@code T}
+     * @return The number of children of type {@code T}, excluding children of the indicated sub-type
      */
-    <T extends IntASTNode> int getChildCount(Class<? extends T> type);
+    <T extends IntASTNode> int getChildCount(Class<? extends T> type, Class<? extends T> ...exclude);
 
     /**
      * Adds a node to this node's children. Node classes that do

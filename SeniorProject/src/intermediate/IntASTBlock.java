@@ -1,5 +1,7 @@
 package intermediate;
 
+import java.util.List;
+
 /**
  * Intermediate AST node that represents a block statement.
  * May be standalone or serve as the body of another construct
@@ -35,5 +37,21 @@ public class IntASTBlock extends AbstractIntASTBranchNode implements IntASTState
     @Override
     public void setStatic(boolean isStatic) {
         this.isStatic = isStatic;
+    }
+
+    public IntASTStatement getStatement(int i) {
+        return getChild(i, IntASTStatement.class);
+    }
+
+    public List<IntASTStatement> getStatement() {
+        return getChildren(IntASTStatement.class);
+    }
+
+    public IntASTClass getClass(int i) {
+        return getChild(i, IntASTClass.class);
+    }
+
+    public List<IntASTClass> getClasses() {
+        return getChildren(IntASTClass.class);
     }
 }

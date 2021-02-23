@@ -94,6 +94,15 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
+    public IntASTNode visitTypeList(JavaParser.TypeListContext ctx) {
+        IntASTTypeList root = new IntASTTypeList();
+        for (JavaParser.TypeContext type : ctx.type()) {
+            root.addChild(visitType(type));
+        }
+        return root;
+    }
+
+    @Override
     public IntASTNode visitType(JavaParser.TypeContext ctx) {
         // TODO implement type specification conversion (for stuff like type checking and casting)
         throw new UnsupportedOperationException("the rule \"type\" is currently unsupported");
@@ -140,14 +149,17 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTClass visitNormalClassDeclaration(JavaParser.NormalClassDeclarationContext ctx) {
         IntASTClass root = new IntASTClass(ctx.Identifier().getText());
         // get the inherited class
+        IntASTTypeList inherit = new IntASTTypeList();
         if (ctx.type() != null) {
-            root.addChild(new IntASTInherit(ctx.type().classOrInterfaceType().Identifier(0).getText()));
+            inherit.addChild(new IntASTIdentifier(ctx.type().classOrInterfaceType().Identifier(0).getText()));
         }
         // get the inherited interfaces
-        if (ctx.typeList() != null && ctx.typeList().type() != null) {
-            for (JavaParser.TypeContext type : ctx.typeList().type()) {
-                root.addChild(new IntASTInherit(type.classOrInterfaceType().Identifier(0).getText()));
-            }
+        if (ctx.typeList() != null) {
+            inherit.addChild(visitTypeList(ctx.typeList()));
+        }
+        // add the inherited types
+        if (inherit.getChildCount() != 0) {
+            root.addChild(inherit);
         }
         // get the class body
         root.addChild(visitClassBody(ctx.classBody()));
@@ -397,9 +409,17 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTNode visitArrayInitializer(JavaParser.ArrayInitializerContext ctx) {
-        // TODO write array initializer conversion
-        return null;
+    public IntASTArrayInit visitArrayInitializer(JavaParser.ArrayInitializerContext ctx) {
+
+        IntASTArrayInit root = new IntASTArrayInit();
+
+        List<JavaParser.VariableInitializerContext> list = ctx.variableInitializer();
+
+        for (JavaParser.VariableInitializerContext initContext : list) {
+                root.addChild(visitVariableInitializer(initContext));
+        }
+
+        return root;
     }
 
     @Override
@@ -424,8 +444,16 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             // block statement
             return visitBlock(ctx.block());
         } else if (ctx.ASSERT() != null) {
-            // TODO add support for assert statements? they may be outside the scope of this project though
-            throw new UnsupportedOperationException("assert statements not supported");
+
+            IntASTAssert root = new IntASTAssert();
+
+            List<JavaParser.ExpressionContext> list = ctx.expression();
+
+            for (JavaParser.ExpressionContext expressContext : list) {
+                root.addChild(visitExpression(expressContext));
+            }
+            return root;
+
         } else if (ctx.IF() != null) {
             // if statement
             IntASTIf root = new IntASTIf();
@@ -532,8 +560,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTCatchClause visitCatches (JavaParser.CatchesContext ctx) {
-        IntASTCatchClause root = new IntASTCatchClause();
+    public IntASTCatches visitCatches (JavaParser.CatchesContext ctx) {
+        IntASTCatches root = new IntASTCatches();
         List<JavaParser.CatchClauseContext> list = ctx.catchClause();
 
         for (JavaParser.CatchClauseContext catchClauseContext : list) {
@@ -555,11 +583,10 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     // TODO Complete catchType & qualifiedName functionality
-    /*
     @Override
-    public IntASTCatchClause visitCatchType (JavaParser.CatchTypeContext ctx) {
+    public IntASTTypeList visitCatchType (JavaParser.CatchTypeContext ctx) {
 
-        IntASTCatchClause root = new IntASTCatchClause();
+        IntASTTypeList root = new IntASTTypeList();
         List <JavaParser.QualifiedNameContext> list = ctx.qualifiedName();
 
         for (JavaParser.QualifiedNameContext qualName : list) {
@@ -571,8 +598,15 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTIdentifier visitQualifiedName (JavaParser.QualifiedNameContext ctx) {
-        return null;
-    }*/
+        StringBuilder name = new StringBuilder(ctx.Identifier(0).getText());
+
+        for (int i = 1; i < ctx.Identifier().size(); i++) {
+            name.append(".");
+            name.append(ctx.Identifier(i).getText());
+        }
+
+        return new IntASTIdentifier(name.toString());
+    }
 
 
     @Override
@@ -964,9 +998,40 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         } else if (ctx.castExpression() != null) {
             return visitCastExpression(ctx.castExpression());
         } else {
-            IntASTStatement root = visitPrimary(ctx.primary());
+            IntASTStatement root = new IntASTStatementExpression();
+            IntASTStatement tmp = visitPrimary(ctx.primary());
+            StringBuilder name = new StringBuilder();
+            if (tmp instanceof IntASTIdentifier) {
+                // collect a sequence of identifiers into a single string
+                name.append(tmp.getText());
+            } else {
+                root.addChild(tmp);
+            }
             for (JavaParser.SelectorContext select : ctx.selector()) {
-                root.addChild(visitSelector(select));
+                tmp = visitSelector(select);
+                if (tmp instanceof IntASTMethodCall) {
+                    if (name.length() > 0) {
+                        name.append(".");
+                        name.append(tmp.getChild(0).getText());
+                        IntASTExpressionList exp = ((IntASTMethodCall) tmp).getExpressionList();
+                        tmp = new IntASTMethodCall();
+                        tmp.addChild(new IntASTIdentifier(name.toString()));
+                        tmp.addChild(exp);
+                        root.addChild(tmp);
+                        name.setLength(0);
+                    } else {
+                        root.addChild(new IntASTOperator("."));
+                        root.addChild(tmp);
+                    }
+                } else if (tmp instanceof IntASTIdentifier) {
+                    name.append(".").append(tmp.getText());
+                } else if (tmp instanceof IntASTExpression) {
+                    root.addChild(new IntASTOperator("["));
+                    root.addChild(tmp);
+                    root.addChild(new IntASTOperator("]"));
+                } else {
+                    throw new UnsupportedOperationException();
+                }
             }
             if (ctx.INC() != null) {
                 root.addChild(new IntASTOperator("++"));
@@ -989,15 +1054,32 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         if (ctx.parExpression() != null) {
             return visitParExpression(ctx.parExpression());
         } else if (ctx.THIS() != null && ctx.nonWildcardTypeArguments() == null) {
-            // TODO add "this(...)" conversion for constructors
+            if (ctx.arguments() != null) {
+                IntASTMethodCall root = new IntASTMethodCall();
+                root.addChild(new IntASTIdentifier("this"));
+                root.addChild(visitArguments(ctx.arguments()));
+                return root;
+            } else {
+                return new IntASTIdentifier("this");
+            }
         } else if (ctx.SUPER() != null) {
-            // TODO add "super(...)" conversion for constructors
+            IntASTMethodCall root = new IntASTMethodCall();
+            IntASTStatement sup = visitSuperSuffix(ctx.superSuffix());
+            if (sup instanceof IntASTMethodCall) {
+                root.addChild(new IntASTIdentifier("super." + ((IntASTMethodCall) sup).getIdentifier().getText()));
+                root.addChild(((IntASTMethodCall) sup).getExpressionList());
+            } else if (sup instanceof IntASTIdentifier) {
+                return new IntASTIdentifier("super." + sup.getText());
+            } else {
+                root.addChild(new IntASTIdentifier("super"));
+                root.addChild(sup);
+            }
+            return root;
         } else if (ctx.literal() != null) {
             IntASTStatementExpression root = new IntASTStatementExpression();
             root.addChild(new IntASTLiteral(ctx.literal().getText()));
             return root;
         } else if (ctx.NEW() != null) {
-            // TODO maybe create an IntASTCreator class?
             IntASTStatementExpression root = new IntASTStatementExpression();
             root.addChild(new IntASTOperator("new"));
             root.addChild(visitCreator(ctx.creator()));
@@ -1006,25 +1088,36 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             // TODO add generic-type-prefixed method call?
             throw new UnsupportedOperationException("Explicit generic-type method calls are unsupported");
         } else if (ctx.Identifier() != null && ctx.Identifier().size() > 0) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
             // combine multiple identifiers (separated by ".") into a single identifier
             List<TerminalNode> ids = ctx.Identifier();
             StringBuilder id = new StringBuilder(ids.get(0).getText());
             for (int i = 1; i < ids.size(); i++) {
                 id.append('.').append(ids.get(i).getText());
             }
-            root.addChild(new IntASTIdentifier(id.toString()));
             // get the identifiers' suffix, if one exists
             if (ctx.identifierSuffix() != null) {
-                root.addChild(visitIdentifierSuffix(ctx.identifierSuffix()));
+                IntASTExpression tmp = visitIdentifierSuffix(ctx.identifierSuffix());
+                if (tmp instanceof IntASTExpressionList) {
+                    IntASTMethodCall root = new IntASTMethodCall();
+                    root.addChild(new IntASTIdentifier(id.toString()));
+                    root.addChild(tmp);
+                    return root;
+                }
             }
-            return root;
+            return new IntASTIdentifier(id.toString());
         } else if (ctx.primitiveType() != null) {
             // TODO add ".class" for primitives and primitive arrays?
             throw new UnsupportedOperationException("\".class\" for primitives and primitive arrays are unsupported");
         } else {
             // TODO add ".class" for void type?
             throw new UnsupportedOperationException("\"void.class\" is unsupported");
+        }
+    }
+
+    @Override
+    public IntASTExpression visitSuperSuffix(JavaParser.SuperSuffixContext ctx) {
+        if (ctx.Identifier() != null) {
+            ;
         }
         return null;
     }
@@ -1038,20 +1131,73 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     @Override
     public IntASTStatement visitCreator(JavaParser.CreatorContext ctx) {
-        // TODO add creator conversion (array/object creation)
-        return null;
+        if (ctx.classCreatorRest() != null) {
+            IntASTMethodCall root = new IntASTMethodCall();
+            root.addChild(visitCreatedName(ctx.createdName()));
+            root.addChild(visitClassCreatorRest(ctx.classCreatorRest()));
+            return root;
+        } else {
+            // TODO add array creator conversion
+            return null;
+        }
     }
 
     @Override
-    public IntASTStatement visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) {
+    public IntASTIdentifier visitCreatedName(JavaParser.CreatedNameContext ctx) {
+        if (ctx.primitiveType() == null) {
+            List<TerminalNode> lst = ctx.Identifier();
+            StringBuilder name = new StringBuilder(lst.get(0).getText());
+            for (int i = 1; i < lst.size(); i++) {
+                name.append(".").append(lst.get(i).getText());
+            }
+            return new IntASTIdentifier(name.toString());
+        } else {
+            return visitPrimitiveType(ctx.primitiveType());
+        }
+    }
+
+    @Override
+    public IntASTIdentifier visitPrimitiveType(JavaParser.PrimitiveTypeContext ctx) {
+        return new IntASTIdentifier(ctx.getText());
+    }
+
+    @Override
+    public IntASTExpressionList visitClassCreatorRest(JavaParser.ClassCreatorRestContext ctx) {
+        // TODO add support for anonymous classes?
+        return visitArguments(ctx.arguments());
+    }
+
+    @Override
+    public IntASTExpressionList visitArguments(JavaParser.ArgumentsContext ctx) {
+        return ctx.expressionList() != null ? visitExpressionList(ctx.expressionList()) : new IntASTExpressionList();
+    }
+
+    @Override
+    public IntASTExpression visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) {
         // TODO add identifier suffix conversion (array indexing, ".class", method call parameters, etc.)
+        if (ctx.arguments() != null) {
+            return visitArguments(ctx.arguments());
+        }
         return null;
     }
 
     @Override
     public IntASTStatement visitSelector(JavaParser.SelectorContext ctx) {
         // TODO add selector conversion. this is not very clear but seems to consist of extensions to the primary rule
-        return null;
+        if (ctx.Identifier() != null) {
+            if (ctx.arguments() != null) {
+                IntASTMethodCall root = new IntASTMethodCall();
+                root.addChild(new IntASTIdentifier(ctx.Identifier().getText()));
+                root.addChild(visitArguments(ctx.arguments()));
+                return root;
+            } else {
+                return new IntASTIdentifier(ctx.Identifier().getText());
+            }
+        } else if (ctx.expression() != null) {
+            return visitExpression(ctx.expression());
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
 
@@ -1118,6 +1264,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
 
 
+    // TODO eventually finish interface stuff
+
     @Override
     public IntASTClass visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
         if (ctx.annotationTypeDeclaration() != null) {
@@ -1133,8 +1281,12 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         IntASTClass root = new IntASTClass(ctx.Identifier().getText());
         // get the inherited interfaces
         if (ctx.typeList() != null && ctx.typeList().type() != null) {
+            IntASTTypeList inherit = new IntASTTypeList();
             for (JavaParser.TypeContext type : ctx.typeList().type()) {
-                root.addChild(new IntASTInherit(type.classOrInterfaceType().Identifier(0).getText()));
+                inherit.addChild(new IntASTIdentifier(type.classOrInterfaceType().Identifier(0).getText()));
+            }
+            if (inherit.getChildCount() != 0) {
+                root.addChild(inherit);
             }
         }
         // get the interface body

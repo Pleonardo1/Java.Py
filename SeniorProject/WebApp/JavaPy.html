@@ -5,6 +5,7 @@
     <title>Java to Python</title>
     <link rel="stylesheet" type="text/css" href="JavaPy.css"/>
     <link rel="stylesheet" type="text/javascript" href="JavaPy.js" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <article>
@@ -18,6 +19,7 @@
 
     <div class ="myTextAreas">
         <!--<input id="myFile" type="file"/> -->
+        <input id="myFile" type="file"/>
         <textarea id="myTextArea" rows="20" columns="20" placeholder="Java Code Input..."></textArea>
 
         <!--<input id="myFile2" type="file"/> -->
@@ -25,13 +27,38 @@
     </div>
 
     <div class ="buttons">
-        <button type="button" onclick="getOutput()">Convert</button>
+        <button id="compile">Convert</button>
         <button type="button" onclick="clearOutput()">Clear</button>
     </div>
 
     </article>
 
     <script>
+        $(document).ready(function() {
+           $("#myFile").on('input', function(event) {
+               $.ajax({
+                   url : event.value,
+                   dataType: "text",
+                   success : function (data) {
+                       $("#myTextArea").text(data);
+                   }
+               });
+           });
+        });
+
+
+
+        $('#compile').on('click', function() {
+            $.ajax({
+                url : 'run.php'
+            }).done(function(data) {
+                console.log(data);
+            });
+        });
+    </script>
+
+    <script>
+
     function getOutput() {
         document.getElementById("myTextArea2").src = "./output.txt";
     }

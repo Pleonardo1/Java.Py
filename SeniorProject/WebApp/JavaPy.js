@@ -1,8 +1,30 @@
+window.onload = function ()  {
 
-function getOutput() {
-    document.getElementById("output").src = "./output.txt";
+    document.getElementById("myFile").addEventListener("change", function() {
+
+      var reader = new FileReader();
+      reader.addEventListener('load', function() {
+        document.getElementById('myTextArea').innerText = this.result;
+      });
+      reader.readAsText(document.getElementById('myFile').files[0]);
+
+    });
+
+    var button = document.getElementById("copyID"),
+            input = document.getElementById("myTextArea2");
+
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            input.select();
+            document.execCommand("copy");
+        });
+
+    /*function getOutput() {
+        document.getElementById("myTextArea2").src = "./output.txt";
+    }*/
+
 }
 
-function displayIframe() {
-        document.getElementById("iframeDisplay").innerHTML = "<iframe src=\"../HtmlPage1.html\" height=\"200\" width=\"300\" ></iframe>";
-   }
+function clearOutput() {
+        document.getElementById("myTextArea2").value = "";
+}

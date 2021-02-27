@@ -4,44 +4,48 @@
     <meta charset="utf-8" />
     <title>Java to Python</title>
     <link rel="stylesheet" type="text/css" href="JavaPy.css"/>
-    <link rel="stylesheet" type="text/javascript" href="JavaPy.js" />
+    <script src="JavaPy.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <article>
         <img src="JavaPy.png" class="center" width="50%"/>
 
-    <!--
-    <div class="topnav">
-        <a class="active" href="#home">HOME</a>
-        <a href="#about">ABOUT</a>
-    </div> -->
-
     <div class ="myTextAreas">
-        <!--<input id="myFile" type="file"/> -->
-        <textarea id="myTextArea" rows="20" columns="20" placeholder="Java Code Input..."></textArea>
-
-        <!--<input id="myFile2" type="file"/> -->
+        <textarea id="myTextArea" rows="20" columns="20" wrap="soft" placeholder="Java Code Input..."></textArea>
         <textarea id="myTextArea2" src = "" rows="20" columns="20" placeholder="Python Code output..."></textArea>
     </div>
 
     <div class ="buttons">
-        <button type="button" onclick="getOutput()">Convert</button>
+        <input id="myFile" type="file" title=" "/>
+        <button id="compile">Convert</button>
         <button type="button" onclick="clearOutput()">Clear</button>
+        <input type="button" id="copyID" value="Copy" />
     </div>
 
     </article>
 
     <script>
-  
-    function getOutput() {
-        document.getElementById("myTextArea2").src = "./output.txt";
-    }
+        /*$(document).ready(function() {
+           $("#myFile").on('input', function(event) {
+               $.ajax({
+                   url : event.value,
+                   dataType: "text",
+                   success : function (data) {
+                       $("#myTextArea").text(data);
+                   }
+               });
+           });
+        });*/
 
-    function clearOutput() {
-        document.getElementById("myTextArea2").src = "";
-    }
+
+        $('#compile').on('click', function() {
+            $.ajax({
+                url : 'run.php'
+            }).done(function(data) {
+                console.log(data);
+            });
+        });
     </script>
-
 </body>
-
 </html>

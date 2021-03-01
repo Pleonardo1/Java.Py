@@ -1,8 +1,5 @@
  class MyNum:
- 	 num=5
- 	 	 	 	 	 	 	 def main (self):
- 	 	 	 	 	 test=newMyNum()
- 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 
+ 	 	 	 
 
  m = MyNum() 
  m.main()

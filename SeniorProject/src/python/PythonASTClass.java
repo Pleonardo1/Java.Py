@@ -20,6 +20,7 @@ public class PythonASTClass extends AbstractPythonASTBranchNode {
                 // this class already has an inheritance list defined, so
                 // throw an exception
                 throw new IllegalArgumentException("Cannot have more than one list of inherited types per class declaration");
+            }
         } else if (child instanceof PythonASTSuite) {
               // adding the class's body, so ensure one doesn't
               // already exist

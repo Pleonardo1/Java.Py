@@ -8,7 +8,7 @@ public class PythonASTArgList extends AbstractPythonASTBranchNode {
         super("");
     }
 
-    //@Override
+    @Override
     public void addChild(PythonASTNode child) {
         // ArgList is one or multiple arguments
         if (child == null) {
@@ -23,8 +23,8 @@ public class PythonASTArgList extends AbstractPythonASTBranchNode {
             //Series of arguments
             child.setParent(this);
             super.children.add(child);
-
-        }else {
+        
+        }else if (child instanceof PythonASTTerminal){
             throw new IllegalArgumentException("PythonASTArgList does not support children of type \""
                     + child.getClass().getName() + "\"");
         }

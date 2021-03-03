@@ -7,6 +7,7 @@ public class PythonASTClass extends AbstractPythonASTBranchNode {
         super(className);
     }
     
+    @Override
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;

@@ -1,5 +1,12 @@
  class MyNum:
- 	 	 	 
+ 	 memberField1=-1
+ memberField2=""
+ 	 	 	 	 	 	 	 	 	 	 	 x=0
+ 	 	 	 	 y=3.14
+ 	 	 	 	 z=True
+ 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 def main (self):
+ 	 	 	 	 	 	 myNum=newMyNum(1,2.0,"xyz")
+ 	 	 	 	 	 	 	 	 	 	 	 	 
 
  m = MyNum() 
  m.main()

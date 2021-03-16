@@ -4,6 +4,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 
+// TODO Determine a method of tracking whether a variable reference is local or global
+
 /**
  * Uses the Java parse tree defined by Java.g4 and created by
  * the class {@link JavaParser} to build an Intermediate AST.
@@ -88,13 +90,14 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTClass visitTypeDeclaration(JavaParser.TypeDeclarationContext ctx) {
         if (ctx.classOrInterfaceDeclaration() == null) {
+            // TODO add interface support
             return null;
         }
         return visitClassOrInterfaceDeclaration(ctx.classOrInterfaceDeclaration());
     }
 
     @Override
-    public IntASTNode visitTypeList(JavaParser.TypeListContext ctx) {
+    public IntASTTypeList visitTypeList(JavaParser.TypeListContext ctx) {
         IntASTTypeList root = new IntASTTypeList();
         for (JavaParser.TypeContext type : ctx.type()) {
             root.addChild(visitType(type));
@@ -103,9 +106,27 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTNode visitType(JavaParser.TypeContext ctx) {
+    public IntASTIdentifier visitType(JavaParser.TypeContext ctx) {
         // TODO implement type specification conversion (for stuff like type checking and casting)
-        throw new UnsupportedOperationException("the rule \"type\" is currently unsupported");
+        IntASTIdentifier root;
+        if (ctx.classOrInterfaceType() != null) {
+            root = visitClassOrInterfaceType(ctx.classOrInterfaceType());
+        } else {
+            root = visitPrimitiveType(ctx.primitiveType());
+        }
+        if (!ctx.LBRACK().isEmpty()) {
+            StringBuilder name = new StringBuilder(root.getText());
+            for (int i = ctx.LBRACK().size(); i > 0; i--) {
+                name.append("[]");
+            }
+            root.setText(name.toString());
+        }
+        return root;
+    }
+
+    @Override
+    public IntASTIdentifier visitClassOrInterfaceType(JavaParser.ClassOrInterfaceTypeContext ctx) {
+        return null;
     }
 
     /**
@@ -998,7 +1019,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         } else if (ctx.castExpression() != null) {
             return visitCastExpression(ctx.castExpression());
         } else {
-            IntASTStatement root = new IntASTStatementExpression();
+            IntASTStatementExpression root = new IntASTStatementExpression();
             IntASTStatement tmp = visitPrimary(ctx.primary());
             StringBuilder name = new StringBuilder();
             if (tmp instanceof IntASTIdentifier) {
@@ -1033,19 +1054,36 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                     throw new UnsupportedOperationException();
                 }
             }
+            if (name.length() != 0) {
+                root.addChild(new IntASTIdentifier(name.toString()));
+            }
             if (ctx.INC() != null) {
                 root.addChild(new IntASTOperator("++"));
             } else if (ctx.DEC() != null) {
                 root.addChild(new IntASTOperator("--"));
+            }
+            if (root.getChildCount() == 1) {
+                return (IntASTStatement) root.getChild(0);
             }
             return root;
         }
     }
 
     @Override
-    public IntASTStatement visitCastExpression(JavaParser.CastExpressionContext ctx) {
-        // TODO add type casting to the intermediate AST
-        return null;
+    public IntASTCastExpression visitCastExpression(JavaParser.CastExpressionContext ctx) {
+        IntASTCastExpression root = new IntASTCastExpression();
+        if (ctx.primitiveType() != null) {
+            root.addChild(visitPrimitiveType(ctx.primitiveType()));
+            root.addChild(visitUnaryExpression(ctx.unaryExpression()));
+        } else {
+            if (ctx.type() != null) {
+                root.addChild(visitType(ctx.type()));
+            } else {
+                root.addChild(visitExpression(ctx.expression()));
+            }
+            root.addChild(visitUnaryExpressionNotPlusMinus(ctx.unaryExpressionNotPlusMinus()));
+        }
+        return root;
     }
 
     @Override
@@ -1076,9 +1114,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             }
             return root;
         } else if (ctx.literal() != null) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
-            root.addChild(new IntASTLiteral(ctx.literal().getText()));
-            return root;
+            return new IntASTLiteral(ctx.literal().getText());
         } else if (ctx.NEW() != null) {
             IntASTStatementExpression root = new IntASTStatementExpression();
             root.addChild(new IntASTOperator("new"));

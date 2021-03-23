@@ -9,8 +9,14 @@ public class PythonASTAtomExpression extends AbstractPythonASTBranchNode impleme
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTAtom
-                || child instanceof PythonASTTrailer) {
+        } else if (child instanceof PythonASTAtom) {
+            if (getChildCount(PythonASTAtom.class) == 0) {
+                child.setParent(this);
+                super.children.add(child);
+            } else {
+                throw new IllegalArgumentException("Cannot have more than 1 child of type PythonASTAtom");
+            }
+        } else if (child instanceof PythonASTTrailer) {
             child.setParent(this);
             super.children.add(child);
         } else {

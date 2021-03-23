@@ -11,6 +11,9 @@ public class PythonASTClass extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
+        } else if (child instanceof PythonASTTerminal) {
+            child.setParent(this);
+            super.children.add(child);
         } else if (child instanceof PythonASTArgList) {
             if (super.children.isEmpty() ||
                     !(super.children.get(0) instanceof PythonASTArgList)) {
@@ -38,8 +41,6 @@ public class PythonASTClass extends AbstractPythonASTBranchNode {
         } else {
               throw new IllegalArgumentException("IntASTClass does not support children of type \""
                       + child.getClass().getName() + "\"");
-              }
-        
-        
+        }
     }
 }

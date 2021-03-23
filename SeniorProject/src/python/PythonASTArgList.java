@@ -14,17 +14,16 @@ public class PythonASTArgList extends AbstractPythonASTBranchNode {
         if (child == null) {
             return;
         } else if (child instanceof PythonASTArgument) {
-            //TODO handle single argument
             //Arguments can be made up of "test" (identifier) assignments w/optional for loops (line 257 py grammar)
             child.setParent(this);
             super.children.add(child);
-
         } else if(child instanceof PythonASTArgList) {
             //Series of arguments
-            child.setParent(this);
-            super.children.add(child);
-        
-        }else if (child instanceof PythonASTTerminal){
+            for (PythonASTNode node : child.getChildren()) {
+                addChild(node);
+            }
+            ((PythonASTArgList) child).children.clear();
+        } else {
             throw new IllegalArgumentException("PythonASTArgList does not support children of type \""
                     + child.getClass().getName() + "\"");
         }

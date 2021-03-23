@@ -27,6 +27,17 @@ public class PythonASTTerminal extends AbstractPythonASTNode {
         }
     }
     
+    public static final class PythonASTNewline extends PythonASTTerminal {
+        public PythonASTNewline() {
+            super("");
+        }
+
+        @Override
+        public void setText(String text) {
+            throw new UnsupportedOperationException();
+        }
+    }
+    
     public PythonASTTerminal(String text) {
         super(text);
     }

@@ -26,10 +26,10 @@ public class PythonASTExpressionStatement extends AbstractPythonASTBranchNode {
                 case "&=":
                 case "|=":
                 case "^=":
+                case "\\=":
                 case "<<=":
                 case ">>=":
                 case "**=":
-                case "\\=":
                     child.setParent(this);
                     super.children.add(child);
                     break;

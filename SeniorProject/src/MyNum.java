@@ -18,7 +18,13 @@ class MyNum {
         double y = 3.14;
         boolean z = true;
 
-        x = x + (int) y;
+        if (x > 0) {
+            x = x + (int) y;
+        } else if (x == 0) {
+            x = x - (int) y;
+        } else {
+            x = (int) y;
+        }
 
         return 10;
     }

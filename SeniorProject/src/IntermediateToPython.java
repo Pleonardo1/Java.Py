@@ -238,9 +238,9 @@ public class IntermediateToPython {
 
         } else if (ctx instanceof IntASTTry) {
             return visitTry((IntASTTry) ctx);
-
-        } else if (ctx instanceof IntASTCatches) {
-            return visitCatches((IntASTCatches) ctx);
+            
+        /*} else if (ctx instanceof IntASTCatches) {
+            return visitCatches((IntASTCatches) ctx); */
 
         } else if (ctx instanceof IntASTMethod) {
             return visitMethod((IntASTMethod) ctx);
@@ -320,6 +320,54 @@ public class IntermediateToPython {
         for (IntASTStatement node : stmt_list) {
             root.addChild(visitStatement(node));
         }
+        return root;
+    }
+
+    // TODO: Check logic on Try Statement specifically except close
+    public PythonASTTryStatement visitTry (IntASTTry ctx) {
+        PythonASTTryStatement root = new PythonASTTryStatement();
+        List<IntASTCatchClause> catch_clauses = ctx.getCatches().getCatchClause();
+        
+        //Try Clause
+        root.addChild(new PythonASTTerminal("try"));
+        root.addChild(new PythonASTTerminal(":"));
+        
+        root.addChild(visitBlock(ctx.getBlock(0)));
+        
+
+        //Except Clause
+        if (ctx.getChildCount() == 3 || !ctx.hasFinally()) {
+            for (IntASTCatchClause clause : catch_clauses) {
+                root.addChild(visitExceptClause(clause));
+            }
+        }
+        
+        if (ctx.hasFinally()) {
+            //Finally
+            root.addChild(new PythonASTTerminal("finally"));
+            root.addChild(new PythonASTTerminal(":"));
+            root.addChild(visitBlock(ctx.getBlock(ctx.getChildCount() - 1)));
+        }
+
+        return root;
+    }
+    
+    // TODO: Check Except Clause Logic
+    public PythonASTExceptClause visitExceptClause(IntASTCatchClause ctx) {
+        PythonASTExceptClause root = new PythonASTExceptClause();
+        
+        //Typelist Id Block
+        root.addChild(new PythonASTTerminal("except"));
+        root.addChild(visitTypeList(ctx.getTypeList()));
+        
+        if (ctx.getIdentifier() != null) {
+            root.addChild(new PythonASTTerminal("as"));
+            root.addChild(new PythonASTTerminal(ctx.getIdentifier().getText()));
+        }
+
+        root.addChild(new PythonASTTerminal(":"));
+        root.addChild(visitBlock(ctx.getBlock()));
+        
         return root;
     }
 
@@ -478,5 +526,28 @@ public class IntermediateToPython {
             default:
                 return new PythonASTTerminal(ctx.getText());
         }
+    }
+    
+    // TODO: Check assertion Logic
+    public PythonASTAssertStatement visitAssert(IntASTAssert ctx) {
+        PythonASTAssertStatement root = new PythonASTAssertStatement();
+        List<IntASTExpression> exprs = ctx.getExpression();
+        
+        root.addChild(new PythonASTTerminal("assert"));
+        
+        //List of Expressions
+        if(exprs.size() > 1) {
+            for (int i = 0; i < exprs.size() - 1; i++) {
+                root.addChild(visitExpression(ctx.getExpression(i)));
+                root.addChild(new PythonASTTerminal(","));
+            }
+            root.addChild(visitExpression(ctx.getExpression(exprs.size() - 1)));
+            
+        // Single Expression    
+        } else {
+            root.addChild(visitExpression(ctx.getExpression(0)));
+        }
+        
+        return root;
     }
 }

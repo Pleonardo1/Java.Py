@@ -17,7 +17,7 @@ public class PythonASTWhileStatement extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTWhile only accepts the terminal children" +
                         " 'while', ':', and 'else'; " + child.getText());
             }
-        } else if (child instanceof PythonASTTest
+        } else if (child instanceof PythonASTExpression
                 || child instanceof PythonASTSuite) {
             child.setParent(this);
             super.children.add(child);

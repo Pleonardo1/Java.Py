@@ -21,7 +21,7 @@ public class PythonASTFlowStatement extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTFlowStatement only accepts the terminal children" +
                         " ‘break’, 'continue', 'return', 'raise' ; " + child.getText());
             }
-        } else if (child instanceof PythonASTTest) {
+        } else if (child instanceof PythonASTExpression) {
             child.setParent(this);
             super.children.add(child);
         } else {

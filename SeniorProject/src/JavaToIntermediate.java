@@ -398,9 +398,9 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTNode visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
+    public IntASTExpression visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
         if (ctx.ASSIGN() != null) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
+            IntASTBinaryExpression root = new IntASTBinaryExpression();
             root.addChild(visitVariableDeclaratorId(ctx.variableDeclaratorId()));
             root.addChild(new IntASTOperator("="));
             root.addChild(visitVariableInitializer(ctx.variableInitializer()));

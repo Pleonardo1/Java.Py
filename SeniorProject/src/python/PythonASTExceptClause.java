@@ -17,7 +17,7 @@ public class PythonASTExceptClause extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTExceptClause only accepts the terminal children" +
                         " 'except' and 'as'; " + child.getText());
             }
-        } else if (child instanceof PythonASTTest) {
+        } else if (child instanceof PythonASTExpression) {
             child.setParent(this);
             super.children.add(child);
         }

@@ -23,7 +23,7 @@ public class PythonASTParametersList extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTParametersListStatement only accepts the terminal children" +
                         " ',' and '='; " + child.getText());
             }
-        } else if (child instanceof PythonASTTest) {
+        } else if (child instanceof PythonASTExpression) {
             child.setParent(this);
             super.children.add(child);
         } else {

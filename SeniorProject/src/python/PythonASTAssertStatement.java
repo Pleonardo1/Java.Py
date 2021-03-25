@@ -9,7 +9,7 @@ public class PythonASTAssertStatement extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTTest) {
+        } else if (child instanceof PythonASTExpression) {
             child.setParent(this);
             super.children.add(child);
         } else if (child instanceof PythonASTTerminal) {

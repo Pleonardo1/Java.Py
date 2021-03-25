@@ -17,7 +17,7 @@ public class PythonASTIfStatement extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTIfStatement only accepts the terminal children" +
                         " 'if', 'elif', and 'else'; " + child.getText());
             }
-        } else if (child instanceof PythonASTTest
+        } else if (child instanceof PythonASTExpression
                 || child instanceof PythonASTSuite) {
             child.setParent(this);
             super.children.add(child);

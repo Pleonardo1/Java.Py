@@ -20,9 +20,8 @@ public class PythonASTForStatement extends AbstractPythonASTBranchNode {
                 throw new IllegalArgumentException("PythonASTForStatement only accepts the terminal children" +
                         " 'for', 'in', and 'else'; " + child.getText());
             }
-        } else if (child instanceof PythonASTTestList
-              || child instanceof PythonASTExpressionList
-              || child instanceof PythonASTSuite) {
+        } else if (child instanceof PythonASTExpressionList
+                || child instanceof PythonASTSuite) {
             child.setParent(this);
             super.children.add(child);
         } else {

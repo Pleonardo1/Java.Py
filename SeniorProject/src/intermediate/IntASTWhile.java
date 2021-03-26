@@ -20,20 +20,16 @@ public class IntASTWhile extends AbstractIntASTBranchNode implements IntASTState
         }
     }
 
-    public IntASTExpression getExpression(int i) {
-        return getChild(i, IntASTExpression.class);
+    public IntASTParExpression getParExpression() {
+        return getChild(0, IntASTParExpression.class);
     }
 
-    public List<IntASTExpression> getExpressions() {
-        return getChildren(IntASTExpression.class);
+    public IntASTStatement getStatementNotParExpression() {
+        return getChild(0, IntASTStatement.class, IntASTParExpression.class);
     }
 
-    public IntASTStatement getStatementNotExpression(int i) {
-        return getChild(i, IntASTStatement.class, IntASTExpression.class);
-    }
-
-    public List<IntASTStatement> getStatementsNotExpressions() {
-        return getChildren(IntASTStatement.class, IntASTExpression.class);
+    public List<IntASTStatement> getStatements() {
+        return getChildren(IntASTStatement.class);
     }
 
 }

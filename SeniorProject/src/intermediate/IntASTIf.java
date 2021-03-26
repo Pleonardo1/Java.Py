@@ -32,8 +32,8 @@ public class IntASTIf extends AbstractIntASTBranchNode implements IntASTStatemen
         return getChildren(IntASTStatement.class);
     }
     
-    public IntASTStatement getStatementNotParExpression() {
-        return getChild(0, IntASTStatement.class, IntASTParExpression.class);
+    public List<IntASTStatement> getStatementNotParExpression() {
+        return getChildren(IntASTStatement.class, IntASTParExpression.class);
     }
 }
 

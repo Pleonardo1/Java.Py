@@ -64,10 +64,10 @@ public class IntermediateToPython {
 
         //Can have single argument or more
         for (int i = 0; i < types.size() - 1; i++) {
-            root.addChild(new PythonASTTerminal(types.get(i).getText()));
+            root.addChild(visitTerminal(types.get(i)));
             root.addChild(new PythonASTTerminal(","));
         }
-        root.addChild(new PythonASTTerminal(types.get(types.size()-1).getText()));
+        root.addChild(visitTerminal(types.get(types.size()-1)));
         return root;
     }
 
@@ -114,13 +114,15 @@ public class IntermediateToPython {
         root.addChild(new PythonASTTerminal.PythonASTNewline());
         root.addChild(new PythonASTTerminal.PythonASTIndent());
 
-        if (stmts == null || stmts.isEmpty()) {
+        if (stmts.isEmpty()) {
             PythonASTSimpleStatement simple = new PythonASTSimpleStatement();
             PythonASTSmallStatement small = new PythonASTSmallStatement();
 
             small.addChild(new PythonASTPassStatement());
+
             simple.addChild(small);
             simple.addChild(new PythonASTTerminal.PythonASTNewline());
+
             root.addChild(simple);
         } else {
             for (IntASTStatement stmt : stmts) {
@@ -191,6 +193,7 @@ public class IntermediateToPython {
     }
 
     public PythonASTFunction visitConstructor (IntASTConstructor ctx) {
+        // delegate to visitMethod
         IntASTMethod root = new IntASTMethod("__init__");
         root.addChild(ctx.getMethodParameters());
         root.addChild(ctx.getBlock());
@@ -198,7 +201,9 @@ public class IntermediateToPython {
     }
 
     public PythonASTNode visitStatement(IntASTStatement ctx) {
-        if (ctx instanceof IntASTExpression || ctx instanceof IntASTControl) {
+        if (ctx instanceof IntASTStatementExpression) {
+            return visitStatementExpression((IntASTStatementExpression) ctx);
+        } else if (ctx instanceof IntASTExpression || ctx instanceof IntASTControl) {
             PythonASTStatement root = new PythonASTStatement();
             PythonASTSimpleStatement simple = new PythonASTSimpleStatement();
             PythonASTSmallStatement small = new PythonASTSmallStatement();
@@ -214,8 +219,6 @@ public class IntermediateToPython {
             return root;
         } else if (ctx instanceof IntASTBlock) {
             return visitBlock((IntASTBlock) ctx);
-        } else if (ctx instanceof IntASTStatementExpression) {
-            return visitStatementExpression((IntASTStatementExpression) ctx);
         } else {
             PythonASTStatement root = new PythonASTStatement();
             root.addChild(visitCompoundStatement(ctx));
@@ -260,13 +263,13 @@ public class IntermediateToPython {
 
         for(int i = 0; i < params.size() - 1; i++) {
             tfpdef = new PythonASTTfpdef();
-            tfpdef.addChild(new PythonASTTerminal(params.get(i).getText()));
+            tfpdef.addChild(visitTerminal(params.get(i)));
             root.addChild(tfpdef);
             root.addChild(new PythonASTTerminal(","));
         }
 
         tfpdef = new PythonASTTfpdef();
-        tfpdef.addChild(new PythonASTTerminal(params.get(params.size()-1).getText()));
+        tfpdef.addChild(visitTerminal(params.get(params.size()-1)));
         root.addChild(tfpdef);
 
         return root;
@@ -305,26 +308,74 @@ public class IntermediateToPython {
         List<IntASTExpression> exprs = ctx.getExpressionNotOperator();
         List<IntASTOperator> ops = ctx.getOperator();
 
+        // TODO finish ternary
 
+        return root;
     }
 
-    // TODO: Check Logic
     public PythonASTIfStatement visitIf(IntASTIf ctx) {
         PythonASTIfStatement root = new PythonASTIfStatement();
-        List <IntASTStatement> stmt_list = ctx.getStatement();
+        List<IntASTStatement> stmt_list = ctx.getStatementNotParExpression();
 
         root.addChild(new PythonASTTerminal("if"));
         root.addChild(visitParExpression(ctx.getParExpression()));
         root.addChild(new PythonASTTerminal(":"));
 
-        for (IntASTStatement node : stmt_list) {
-            root.addChild(visitStatement(node));
+        // get if body
+        // ensure we get a node of type PythonASTSuite
+        if (stmt_list.get(0) instanceof IntASTBlock) {
+            root.addChild(visitBlock((IntASTBlock) stmt_list.get(0)));
+        } else {
+            PythonASTSuite suite = new PythonASTSuite();
+            suite.addChild(visitStatement(stmt_list.get(0)));
+            root.addChild(suite);
         }
+
+        // get else and convert else-if to elif
+        while (stmt_list.size() > 1) {
+            // have an else clause, check if its an else-if
+            if (stmt_list.get(1) instanceof IntASTIf) {
+                // have an else-if, so add to root as elif
+                ctx = (IntASTIf) stmt_list.get(1);
+                stmt_list = ctx.getStatementNotParExpression();
+
+                root.addChild(new PythonASTTerminal("elif"));
+                root.addChild(visitParExpression(ctx.getParExpression()));
+                root.addChild(new PythonASTTerminal(":"));
+
+                // get elif body
+                // ensure we get a node of type PythonASTSuite
+                if (stmt_list.get(0) instanceof IntASTBlock) {
+                    root.addChild(visitBlock((IntASTBlock) stmt_list.get(0)));
+                } else {
+                    PythonASTSuite suite = new PythonASTSuite();
+                    suite.addChild(visitStatement(stmt_list.get(0)));
+                    root.addChild(suite);
+                }
+
+                // restart loop to check for further else clauses
+            } else {
+                // have an else, so add to root
+                root.addChild(new PythonASTTerminal("else"));
+                root.addChild(new PythonASTTerminal(":"));
+
+                // get else body
+                // ensure we get a node of type PythonASTSuite
+                if (stmt_list.get(1) instanceof IntASTBlock) {
+                    root.addChild(visitBlock((IntASTBlock) stmt_list.get(1)));
+                } else {
+                    PythonASTSuite suite = new PythonASTSuite();
+                    suite.addChild(visitStatement(stmt_list.get(1)));
+                    root.addChild(suite);
+                }
+            }
+        }
+
         return root;
     }
 
-    // TODO: Check logic on Try Statement specifically except close
     public PythonASTTryStatement visitTry (IntASTTry ctx) {
+        PythonASTExceptClause except;
         PythonASTTryStatement root = new PythonASTTryStatement();
         List<IntASTCatchClause> catch_clauses = ctx.getCatches().getCatchClause();
         
@@ -338,7 +389,11 @@ public class IntermediateToPython {
         //Except Clause
         if (ctx.getChildCount() == 3 || !ctx.hasFinally()) {
             for (IntASTCatchClause clause : catch_clauses) {
-                root.addChild(visitExceptClause(clause));
+                // get the except clause header from the catches clause
+                root.addChild(visitCatchClause(clause));
+                root.addChild(new PythonASTTerminal(":"));
+                // add the except clause body
+                root.addChild(visitBlock(clause.getBlock()));
             }
         }
         
@@ -351,48 +406,59 @@ public class IntermediateToPython {
 
         return root;
     }
-    
-    // TODO: Check Except Clause Logic
-    public PythonASTExceptClause visitExceptClause(IntASTCatchClause ctx) {
+
+    public PythonASTExceptClause visitCatchClause(IntASTCatchClause ctx) {
         PythonASTExceptClause root = new PythonASTExceptClause();
-        
-        //Typelist Id Block
+        PythonASTArgList types = visitTypeList(ctx.getTypeList());
+
         root.addChild(new PythonASTTerminal("except"));
-        root.addChild(visitTypeList(ctx.getTypeList()));
-        
-        if (ctx.getIdentifier() != null) {
-            root.addChild(new PythonASTTerminal("as"));
-            root.addChild(new PythonASTTerminal(ctx.getIdentifier().getText()));
+
+        // add type(s) to the except clause
+        if (types.getChildCount() == 1) {
+            // only 1 type
+            root.addChild(types.getChild(0));
+        } else {
+            // more than 1 type, so add as atom expression (parenthesized expression)
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("("));
+            atom.addChild(types);
+            atom.addChild(new PythonASTTerminal(")"));
+
+            atomExpression.addChild(atom);
+
+            root.addChild(atomExpression);
         }
 
-        root.addChild(new PythonASTTerminal(":"));
-        root.addChild(visitBlock(ctx.getBlock()));
-        
+        // add "as var" to the except clause
+        root.addChild(new PythonASTTerminal("as"));
+        root.addChild(visitTerminal(ctx.getIdentifier()));
+
         return root;
     }
 
-    // TODO: Check Logic
     public PythonASTWhileStatement visitWhile (IntASTWhile ctx) {
         PythonASTWhileStatement root = new PythonASTWhileStatement();
-        List <IntASTExpression> expr_list = ctx.getExpressions();
-        List <IntASTStatement> stmt_list = ctx.getStatementsNotExpressions();
+        IntASTStatement stmt = ctx.getStatementNotParExpression();
 
         root.addChild(new PythonASTTerminal("while"));
-
-        for(IntASTExpression node : expr_list) {
-            root.addChild(visitExpression(node));
-        }
-
+        root.addChild(visitParExpression(ctx.getParExpression()));
         root.addChild(new PythonASTTerminal(":"));
 
-        for(IntASTStatement node : stmt_list) {
-            root.addChild(visitStatement(node));
+        // ensure we get a node of type PythonASTSuite
+        if (stmt instanceof IntASTBlock) {
+            root.addChild(visitBlock((IntASTBlock) stmt));
+        } else {
+            PythonASTSuite suite = new PythonASTSuite();
+            suite.addChild(visitStatement(stmt));
+            root.addChild(suite);
         }
 
         return root;
     }
 
-    private int firstLoopId = 0;
+    private int doWhileFirstLoopId = 0;
 
     public PythonASTWhileStatement visitDo (IntASTDo ctx) {
 
@@ -422,15 +488,12 @@ public class IntermediateToPython {
          */
 
         // handle nested do-while loops
-        String firstLoop = "__is_first_loop_" + this.firstLoopId++;
+        String firstLoop = "__is_first_loop_" + this.doWhileFirstLoopId++;
 
         PythonASTWhileStatement root = new PythonASTWhileStatement();
         PythonASTSimpleStatement stmt = new PythonASTSimpleStatement();
         PythonASTSmallStatement small_stmt = new PythonASTSmallStatement();
         PythonASTBinaryExpression bin_expr = new PythonASTBinaryExpression();
-
-        IntASTParExpression expr_list = ctx.getParExpression();
-        List <IntASTStatement> stmt_list = ctx.getStatement();
 
         /*
          __is_first_loop_XX = True
@@ -503,7 +566,7 @@ public class IntermediateToPython {
         root.addChild(suite);
 
         // reset nested loop counter
-        this.firstLoopId--;
+        this.doWhileFirstLoopId--;
 
         return root;
     }
@@ -527,25 +590,15 @@ public class IntermediateToPython {
                 return new PythonASTTerminal(ctx.getText());
         }
     }
-    
-    // TODO: Check assertion Logic
+
     public PythonASTAssertStatement visitAssert(IntASTAssert ctx) {
         PythonASTAssertStatement root = new PythonASTAssertStatement();
-        List<IntASTExpression> exprs = ctx.getExpression();
         
         root.addChild(new PythonASTTerminal("assert"));
-        
-        //List of Expressions
-        if(exprs.size() > 1) {
-            for (int i = 0; i < exprs.size() - 1; i++) {
-                root.addChild(visitExpression(ctx.getExpression(i)));
-                root.addChild(new PythonASTTerminal(","));
-            }
-            root.addChild(visitExpression(ctx.getExpression(exprs.size() - 1)));
-            
-        // Single Expression    
-        } else {
-            root.addChild(visitExpression(ctx.getExpression(0)));
+        root.addChild(visitExpression(ctx.getExpression(0)));
+        if (ctx.getChildCount() == 2) {
+            root.addChild(new PythonASTTerminal(","));
+            root.addChild(visitExpression(ctx.getExpression(1)));
         }
         
         return root;

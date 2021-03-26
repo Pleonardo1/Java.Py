@@ -306,9 +306,50 @@ public class IntermediateToPython {
     public PythonASTTernaryExpression visitTernaryExpression(IntASTTernaryExpression ctx) {
         PythonASTTernaryExpression root = new PythonASTTernaryExpression();
         List<IntASTExpression> exprs = ctx.getExpressionNotOperator();
-        List<IntASTOperator> ops = ctx.getOperator();
 
-        // TODO finish ternary
+        root.addChild(visitExpression(exprs.get(0)));
+        root.addChild(new PythonASTTerminal("if"));
+        root.addChild(visitExpression(exprs.get(1)));
+        root.addChild(new PythonASTTerminal("else"));
+        root.addChild(visitExpression(exprs.get(2)));
+
+        return root;
+    }
+
+    public PythonASTBinaryExpression visitBinaryExpression(IntASTBinaryExpression ctx) {
+        PythonASTBinaryExpression root = new PythonASTBinaryExpression();
+        List<IntASTExpression> exprs = ctx.getExpressionNotOperator();
+
+        root.addChild(visitExpression(exprs.get(0)));
+        root.addChild(visitTerminal(ctx.getOperator()));
+        root.addChild(visitExpression(exprs.get(1)));
+
+        return root;
+    }
+
+    public PythonASTUnaryExpression visitUnaryExpression(IntASTUnaryExpression ctx) {
+        PythonASTUnaryExpression root = new PythonASTUnaryExpression();
+
+        // determine if the expression is prefix or postfix
+        if (ctx.getChild(0) instanceof IntASTOperator) {
+            // prefix
+            root.addChild(visitTerminal(ctx.getOperator()));
+            root.addChild(visitExpression(ctx.getExpressionNotOperator()));
+        } else {
+            // postfix
+            root.addChild(visitExpression(ctx.getExpressionNotOperator()));
+            root.addChild(visitTerminal(ctx.getOperator()));
+        }
+
+        return root;
+    }
+
+    public PythonASTAtomExpression visitParExpression(IntASTParExpression ctx) {
+        PythonASTAtomExpression root = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+
+        atom.addChild(visitExpression(ctx.getExpression()));
+        root.addChild(atom);
 
         return root;
     }

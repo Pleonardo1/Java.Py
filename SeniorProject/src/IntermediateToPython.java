@@ -237,13 +237,11 @@ public class IntermediateToPython {
             return visitDo((IntASTDo) ctx);
 
         } else  if (ctx instanceof IntASTFor) {
-            return visitFor((IntASTFor) ctx);
+            // TODO: return visitFor((IntASTFor) ctx);
 
+            return null;
         } else if (ctx instanceof IntASTTry) {
             return visitTry((IntASTTry) ctx);
-            
-        /*} else if (ctx instanceof IntASTCatches) {
-            return visitCatches((IntASTCatches) ctx); */
 
         } else if (ctx instanceof IntASTMethod) {
             return visitMethod((IntASTMethod) ctx);
@@ -255,6 +253,8 @@ public class IntermediateToPython {
             throw new IllegalArgumentException("Invalid Compound Statement type: " + ctx.getClass().getName());
         }
     }
+
+
 
     public PythonASTParametersList visitMethodParameters(IntASTMethodParameters ctx) {
         PythonASTParametersList root = new PythonASTParametersList();
@@ -292,6 +292,9 @@ public class IntermediateToPython {
             return visitExpressionList((IntASTExpressionList) ctx);
         } else if (ctx instanceof IntASTCastExpression) {
             return visitCastExpression((IntASTCastExpression) ctx);
+        } else if (ctx instanceof IntASTNewExpression) {
+            // TODO convert new expression
+            return null;
         } else if (ctx instanceof IntASTMethodCall) {
             return visitMethodCall((IntASTMethodCall) ctx);
         } else if (ctx instanceof IntASTAssert) {
@@ -352,6 +355,17 @@ public class IntermediateToPython {
         root.addChild(atom);
 
         return root;
+    }
+
+    public PythonASTFlowStatement visitControl(IntASTControl ctx) {
+        PythonASTFlowStatement flow = new PythonASTFlowStatement();
+
+        flow.addChild(new PythonASTTerminal(ctx.getText()));
+        if (ctx.getExpression() != null) {
+            flow.addChild(visitExpression(ctx.getExpression()));
+        }
+
+        return flow;
     }
 
     public PythonASTIfStatement visitIf(IntASTIf ctx) {
@@ -612,11 +626,113 @@ public class IntermediateToPython {
         return root;
     }
 
+    public PythonASTAssertStatement visitAssert(IntASTAssert ctx) {
+        PythonASTAssertStatement root = new PythonASTAssertStatement();
+
+        root.addChild(new PythonASTTerminal("assert"));
+        root.addChild(visitExpression(ctx.getExpression(0)));
+        if (ctx.getChildCount() == 2) {
+            root.addChild(new PythonASTTerminal(","));
+            root.addChild(visitExpression(ctx.getExpression(1)));
+        }
+
+        return root;
+    }
+
+
+    public PythonASTAtomExpression visitStatementExpression(IntASTStatementExpression ctx) {
+        // TODO
+        return null;
+    }
+
+    public PythonASTAtomExpression visitCastExpression (IntASTCastExpression ctx) {
+        PythonASTAtomExpression root = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+        PythonASTTrailer trailer = new PythonASTTrailer();
+
+        atom.addChild(visitTerminal((IntASTTerminal) ctx.getChild(0)));
+        trailer.addChild(new PythonASTTerminal("("));
+        trailer.addChild(visitExpression((IntASTExpression) ctx.getChild(1)));
+        trailer.addChild(new PythonASTTerminal(")"));
+
+        root.addChild(atom);
+        root.addChild(trailer);
+
+        return root;
+    }
+
+    public PythonASTAtomExpression visitMethodCall(IntASTMethodCall ctx) {
+        PythonASTAtomExpression root = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+        PythonASTTrailer trail = new PythonASTTrailer();
+
+        atom.addChild(visitTerminal(ctx.getIdentifier()));
+
+        trail.addChild(new PythonASTTerminal("("));
+        trail.addChild(visitExpressionList(ctx.getExpressionList()));
+        trail.addChild(new PythonASTTerminal(")"));
+
+        root.addChild(atom);
+        root.addChild(trail);
+
+        return root;
+    }
+
+    public PythonASTExpressionList visitExpressionList(IntASTExpressionList ctx) {
+        PythonASTExpressionList root = new PythonASTExpressionList();
+        List<IntASTExpression> exprs = ctx.getExpression();
+
+        if (!exprs.isEmpty()) {
+            root.addChild(visitExpression(exprs.get(0)));
+
+            for (int i = 1; i < exprs.size(); i++) {
+                root.addChild(new PythonASTTerminal(","));
+                root.addChild(visitExpression(exprs.get(i)));
+            }
+        }
+
+        return root;
+    }
+
+    public PythonASTAtomExpression visitArrayInit(IntASTArrayInit ctx) {
+        PythonASTAtomExpression root = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+
+        atom.addChild(new PythonASTTerminal ("["));
+        atom.addChild(visitExpression((IntASTExpression) ctx.getChild(0)));
+        atom.addChild(new PythonASTTerminal ("]"));
+
+        root.addChild(atom);
+
+        return root;
+    }
+
     public PythonASTTerminal visitTerminal(IntASTTerminal ctx) {
         if (ctx instanceof IntASTOperator) {
             return visitOperator((IntASTOperator) ctx);
+
+        } else if (ctx instanceof IntASTIdentifier) {
+            return visitIdentifier((IntASTIdentifier) ctx);
+
         } else {
             return new PythonASTTerminal(ctx.getText());
+        }
+    }
+
+    public PythonASTTerminal visitIdentifier(IntASTIdentifier ctx) {
+        switch (ctx.getText()) {
+            case "double":
+                return new PythonASTTerminal("float");
+            case "String":
+                return new PythonASTTerminal("str");
+            case "byte":
+            case "short":
+            case "long":
+                return new PythonASTTerminal("int");
+            case "char":
+                return new PythonASTTerminal("chr");
+            default:
+                return new PythonASTTerminal(ctx.getText());
         }
     }
 
@@ -630,18 +746,5 @@ public class IntermediateToPython {
             default:
                 return new PythonASTTerminal(ctx.getText());
         }
-    }
-
-    public PythonASTAssertStatement visitAssert(IntASTAssert ctx) {
-        PythonASTAssertStatement root = new PythonASTAssertStatement();
-        
-        root.addChild(new PythonASTTerminal("assert"));
-        root.addChild(visitExpression(ctx.getExpression(0)));
-        if (ctx.getChildCount() == 2) {
-            root.addChild(new PythonASTTerminal(","));
-            root.addChild(visitExpression(ctx.getExpression(1)));
-        }
-        
-        return root;
     }
 }

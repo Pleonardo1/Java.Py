@@ -1116,8 +1116,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         } else if (ctx.literal() != null) {
             return new IntASTLiteral(ctx.literal().getText());
         } else if (ctx.NEW() != null) {
-            IntASTStatementExpression root = new IntASTStatementExpression();
-            root.addChild(new IntASTOperator("new"));
+            IntASTNewExpression root = new IntASTNewExpression();
             root.addChild(visitCreator(ctx.creator()));
             return root;
         } else if (ctx.nonWildcardTypeArguments() != null) {

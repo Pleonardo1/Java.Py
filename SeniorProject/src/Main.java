@@ -1,8 +1,11 @@
+import intermediate.IntASTCompilationUnit;
 import intermediate.IntASTNode;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import python.PythonASTNode;
+
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -19,7 +22,10 @@ public class Main {
         ParseTree tree = parser.compilationUnit();
 
         System.out.println("Intermediate tree conversion:");
-        toIntermediate(tree);
+        IntASTNode intNode = toIntermediate(tree);
+        System.out.println("\n\n");
+        System.out.println("Python tree conversion:");
+        PythonASTNode pythonNode = intermediateToPython((IntASTCompilationUnit) intNode);
 
         MyVisitor visitor = new MyVisitor();
         visitor.visit(tree);
@@ -72,11 +78,27 @@ public class Main {
         return out;
     }
 
+    public static PythonASTNode intermediateToPython(IntASTCompilationUnit root) {
+        // convert intermediate to python
+        IntermediateToPython python = new IntermediateToPython();
+        PythonASTNode out = python.visitCompilationUnit(root);
+        printPythonTree(out, "");
+        return out;
+    }
+
     public static void printIntermediate(IntASTNode node, String indent) {
         System.out.println(indent + node.getClass().getSimpleName() + ": " + node.getText());
         indent += "  ";
-        for (IntASTNode child : node.getChildren(IntASTNode.class)) {
+        for (IntASTNode child : node.getChildren()) {
             printIntermediate(child, indent);
+        }
+    }
+
+    public static void printPythonTree(PythonASTNode node, String indent) {
+        System.out.println(indent + node.getClass().getSimpleName() + ": " + node.getText());
+        indent += "  ";
+        for (PythonASTNode child : node.getChildren()) {
+            printPythonTree(child, indent);
         }
     }
 }

@@ -70,8 +70,8 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
         }
     }
 
-    public boolean isEnhanced (boolean enhanced) {
-        return enhanced;
+    public boolean isEnhanced () {
+        return isEnhanced;
     }
 
     public List<IntASTIdentifier> getIdentifier() {

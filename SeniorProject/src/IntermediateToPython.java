@@ -639,8 +639,64 @@ public class IntermediateToPython {
         return root;
     }
 
+    public PythonASTForStatement visitFor(IntASTFor ctx) {
+        PythonASTForStatement root = new PythonASTForStatement();
+        PythonASTExpressionList expr_list = new PythonASTExpressionList();
+        PythonASTSuite suite = new PythonASTSuite();
+
+        root.addChild(new PythonASTTerminal("for"));
+
+        if (ctx.getForControl().isEnhanced()) {
+
+            /* Don't need to account for range() or len() for enhanced
+            since you won't have the format --> (char letter : {a, b, c}) in java */
+
+            root.addChild(new PythonASTTerminal(ctx.getForControl().getIdentifier(0).getText()));
+            root.addChild(new PythonASTTerminal("in"));
+            root.addChild(visitExpression(ctx.getForControl().getExpression(0)));
+
+        } else {
+            // Regular For Loop
+            List <IntASTIdentifier> identifiers = ctx.getForControl().getIdentifier();
+            List <IntASTExpression> exprs = ctx.getForControl().getExpression();
+
+            // LocalVariableDecleration || expressionlist in java --> expressionList in python
+            root.addChild(new PythonASTTerminal("in"));
+
+            /*
+                Condition to differentiate using range() and length() or both
+                Do we want to incorporate enumerate?
+             */
+
+            // One or more PythonASTTerminal identifiers
+
+            // TODO: Regular for loop logic
+        }
+
+        root.addChild(new PythonASTTerminal(":"));
+        List <IntASTStatement> statements = ctx.getStatement();
+
+        for (IntASTStatement statement : statements) {
+            suite.addChild(visitStatement(statement));
+        }
+
+        root.addChild(suite);
+        return root;
+    }
+
 
     public PythonASTAtomExpression visitStatementExpression(IntASTStatementExpression ctx) {
+        PythonASTAtomExpression root = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+        PythonASTTrailer trailer = new PythonASTTrailer();
+
+        List <IntASTExpression> exprs = ctx.getExpression();
+
+        for (int i = 0; i < exprs.size() - 1; i++) {
+
+        }
+
+
         // TODO
         return null;
     }

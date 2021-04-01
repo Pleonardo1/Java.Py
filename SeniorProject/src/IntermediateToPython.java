@@ -644,6 +644,10 @@ public class IntermediateToPython {
         PythonASTExpressionList expr_list = new PythonASTExpressionList();
         PythonASTSuite suite = new PythonASTSuite();
 
+        List <IntASTIdentifier> identifiers = ctx.getForControl().getIdentifier();
+        List <IntASTExpression> exprs = ctx.getForControl().getExpression();
+
+        // Terminal 'for'
         root.addChild(new PythonASTTerminal("for"));
 
         if (ctx.getForControl().isEnhanced()) {
@@ -651,28 +655,60 @@ public class IntermediateToPython {
             /* Don't need to account for range() or len() for enhanced
             since you won't have the format --> (char letter : {a, b, c}) in java */
 
-            root.addChild(new PythonASTTerminal(ctx.getForControl().getIdentifier(0).getText()));
+            // ExpressionList
+            expr_list.addChild(new PythonASTTerminal(identifiers.get(0).getText()));
+            root.addChild(expr_list.getChild(0));
+
+            // Terminal 'in'
             root.addChild(new PythonASTTerminal("in"));
-            root.addChild(visitExpression(ctx.getForControl().getExpression(0)));
+
+            //TestList
+            expr_list.addChild(visitExpression(exprs.get(0)));
+            root.addChild(expr_list.getChild(1));
 
         } else {
-            // Regular For Loop
-            List <IntASTIdentifier> identifiers = ctx.getForControl().getIdentifier();
-            List <IntASTExpression> exprs = ctx.getForControl().getExpression();
+            // TODO: Regular for loop logic
 
-            // LocalVariableDecleration || expressionlist in java --> expressionList in python
+            // Child 1: Expression List
+            if(ctx.getForControl().getChild(0) instanceof IntASTIdentifier) {
+                // Identifier
+                expr_list.addChild(new PythonASTTerminal(identifiers.get(0).getText()));
+            } else {
+                // ExpressionList
+                expr_list.addChild(visitExpression(exprs.get(0)));
+            }
+            root.addChild(expr_list);
+
+            // Terminal 'in'
             root.addChild(new PythonASTTerminal("in"));
+
+            // Child 2: use identifier, use range(), use len()
+            if () {
+
+            } else {
+
+            }
+            expr_list.addChild(visitExpression(exprs.get(exprs.size() - 2)));
+
+
+            //need the operator and variable/integer that indicates loop termination
 
             /*
                 Condition to differentiate using range() and length() or both
                 Do we want to incorporate enumerate?
              */
 
-            // One or more PythonASTTerminal identifiers
+            // Child 3: Expression exprs.size() - 1
+            /*
+                Example:
+                i++
+                i/2
+                i+=3
+             */
 
-            // TODO: Regular for loop logic
         }
 
+        //Add suite Identifier & get suite statements
         root.addChild(new PythonASTTerminal(":"));
         List <IntASTStatement> statements = ctx.getStatement();
 

@@ -1,8 +1,7 @@
  class MyNum:
- 	 	 	 x=0
- 	 	 y=1.0
- 	 	 z=x+y
- 	 	 
+ 	 	 	 x={1,2,3}
+ 	 	 i=0
+ 	 	 	 
 
  m = MyNum() 
  m.main()

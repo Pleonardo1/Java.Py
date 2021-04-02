@@ -1,6 +1,6 @@
 package python;
 
-public class PythonASTAssertStatement extends AbstractPythonASTBranchNode {
+public class PythonASTAssertStatement extends AbstractPythonASTBranchNode implements PythonASTExpression {
     public PythonASTAssertStatement() {
         super("");
     }

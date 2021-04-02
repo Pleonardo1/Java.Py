@@ -55,7 +55,7 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
                 }
             } else {
                 // have regular for control
-                if (child instanceof IntASTExpression) {
+                if (child instanceof IntASTExpression || child instanceof IntASTExpressionList) {
                     child.setParent(this);
                     super.children.add(child);
                 } else {
@@ -90,4 +90,11 @@ public class IntASTForControl extends AbstractIntASTBranchNode {
         return getChild(i, IntASTExpression.class);
     }
 
+    public List<IntASTExpressionList> getExpressionList() {
+        return getChildren(IntASTExpressionList.class);
+    }
+    
+    public IntASTExpressionList getExpressionList(int i) {
+        return getChild(i, IntASTExpressionList.class);
+    }
 }

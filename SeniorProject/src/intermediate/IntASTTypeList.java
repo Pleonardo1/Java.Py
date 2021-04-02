@@ -2,7 +2,7 @@ package intermediate;
 
 import java.util.List;
 
-public class IntASTTypeList extends AbstractIntASTBranchNode implements IntASTExpression {
+public class IntASTTypeList extends AbstractIntASTBranchNode implements IntASTStatement {
     public IntASTTypeList() {
         super("");
     }

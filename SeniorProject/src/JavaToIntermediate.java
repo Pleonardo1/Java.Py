@@ -360,19 +360,19 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTExpression visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
+    public IntASTStatement visitLocalVariableDeclarationStatement(JavaParser.LocalVariableDeclarationStatementContext ctx) {
         // filter out simple variable declarations while leaving assignments
         return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
     }
 
     @Override
-    public IntASTExpression visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
+    public IntASTStatement visitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
         // ignore variable modifiers and type
         return visitVariableDeclarators(ctx.variableDeclarators());
     }
 
     @Override
-    public IntASTExpression visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
+    public IntASTStatement visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
         IntASTExpressionList root = new IntASTExpressionList();
         List<JavaParser.VariableDeclaratorContext> list = ctx.variableDeclarator();
         int i;
@@ -1058,9 +1058,23 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 root.addChild(new IntASTIdentifier(name.toString()));
             }
             if (ctx.INC() != null) {
-                root.addChild(new IntASTOperator("++"));
+                IntASTUnaryExpression unary = new IntASTUnaryExpression();
+                if (root.getChildCount() == 1) {
+                    unary.addChild(root.getChild(0));
+                } else {
+                    unary.addChild(root);
+                }
+                unary.addChild(new IntASTOperator("++"));
+                return unary;
             } else if (ctx.DEC() != null) {
-                root.addChild(new IntASTOperator("--"));
+                IntASTUnaryExpression unary = new IntASTUnaryExpression();
+                if (root.getChildCount() == 1) {
+                    unary.addChild(root.getChild(0));
+                } else {
+                    unary.addChild(root);
+                }
+                unary.addChild(new IntASTOperator("--"));
+                return unary;
             }
             if (root.getChildCount() == 1) {
                 return (IntASTStatement) root.getChild(0);
@@ -1131,7 +1145,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             }
             // get the identifiers' suffix, if one exists
             if (ctx.identifierSuffix() != null) {
-                IntASTExpression tmp = visitIdentifierSuffix(ctx.identifierSuffix());
+                IntASTNode tmp = visitIdentifierSuffix(ctx.identifierSuffix());
                 if (tmp instanceof IntASTExpressionList) {
                     IntASTMethodCall root = new IntASTMethodCall();
                     root.addChild(new IntASTIdentifier(id.toString()));
@@ -1208,7 +1222,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTExpression visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) {
+    public IntASTNode visitIdentifierSuffix(JavaParser.IdentifierSuffixContext ctx) {
         // TODO add identifier suffix conversion (array indexing, ".class", method call parameters, etc.)
         if (ctx.arguments() != null) {
             return visitArguments(ctx.arguments());
@@ -1260,7 +1274,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
 
     @Override
-    public IntASTExpression visitForInit(JavaParser.ForInitContext ctx) {
+    public IntASTStatement visitForInit(JavaParser.ForInitContext ctx) {
         if (ctx.localVariableDeclaration() != null) {
             return visitLocalVariableDeclaration(ctx.localVariableDeclaration());
         } else {
@@ -1269,7 +1283,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     }
 
     @Override
-    public IntASTExpression visitForUpdate(JavaParser.ForUpdateContext ctx) {
+    public IntASTStatement visitForUpdate(JavaParser.ForUpdateContext ctx) {
         return visitExpressionList(ctx.expressionList());
     }
 

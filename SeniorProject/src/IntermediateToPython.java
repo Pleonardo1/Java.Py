@@ -160,12 +160,19 @@ public class IntermediateToPython {
                 return null;
             }
             PythonASTSimpleStatement root = new PythonASTSimpleStatement();
+            PythonASTSmallStatement small;
 
             for (int i = 0; i < exprs.size() - 1; i++) {
-                root.addChild(visitExpression(exprs.get(i)));
+                small = new PythonASTSmallStatement();
+                small.addChild(visitExpression(exprs.get(i)));
+
+                root.addChild(small);
                 root.addChild(new PythonASTTerminal(";"));
             }
-            root.addChild(visitExpression(exprs.get(exprs.size() - 1)));
+            small = new PythonASTSmallStatement();
+            small.addChild(visitExpression(exprs.get(exprs.size() - 1)));
+
+            root.addChild(small);
             root.addChild(new PythonASTTerminal.PythonASTNewline());
 
             return root;
@@ -258,7 +265,9 @@ public class IntermediateToPython {
             return visitBlock((IntASTBlock) ctx);
         } else {
             PythonASTStatement root = new PythonASTStatement();
-            root.addChild(visitCompoundStatement(ctx));
+            PythonASTCompoundStatement comp = new PythonASTCompoundStatement();
+            comp.addChild(visitCompoundStatement(ctx));
+            root.addChild(comp);
             return root;
         }
     }
@@ -315,8 +324,7 @@ public class IntermediateToPython {
         return root;
     }
 
-    public PythonASTNode visitExpression(IntASTExpression ctx) {
-
+    public PythonASTExpression visitExpression (IntASTExpression ctx) {
         if (ctx instanceof IntASTTernaryExpression) {
             return visitTernaryExpression((IntASTTernaryExpression) ctx);
         } else if (ctx instanceof IntASTBinaryExpression) {
@@ -327,10 +335,10 @@ public class IntermediateToPython {
             return visitParExpression((IntASTParExpression) ctx);
         } else if (ctx instanceof IntASTArrayInit) {
             return visitArrayInit((IntASTArrayInit) ctx);
-        } else if (ctx instanceof IntASTTypeList) {
-            return visitTypeList((IntASTTypeList) ctx);
-        } else if (ctx instanceof IntASTExpressionList) {
-            return visitExpressionList((IntASTExpressionList) ctx);
+//        } else if (ctx instanceof IntASTTypeList) {
+//            return visitTypeList((IntASTTypeList) ctx);
+//        } else if (ctx instanceof IntASTExpressionList) {
+//            return visitExpressionList((IntASTExpressionList) ctx);
         } else if (ctx instanceof IntASTCastExpression) {
             return visitCastExpression((IntASTCastExpression) ctx);
         } else if (ctx instanceof IntASTNewExpression) {
@@ -341,7 +349,13 @@ public class IntermediateToPython {
         } else if (ctx instanceof IntASTAssert) {
             return visitAssert((IntASTAssert) ctx);
         } else if (ctx instanceof IntASTTerminal) {
-            return visitTerminal((IntASTTerminal) ctx);
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
+
+            atom.addChild(visitTerminal((IntASTTerminal) ctx));
+            atomExpression.addChild(atom);
+
+            return atomExpression;
         } else {
             throw new IllegalArgumentException("Unknown IntASTExpression type: " + ctx.getClass().getSimpleName());
         }
@@ -472,6 +486,7 @@ public class IntermediateToPython {
                     suite.addChild(visitStatement(stmt_list.get(1)));
                     root.addChild(suite);
                 }
+                break;
             }
         }
 
@@ -714,10 +729,10 @@ public class IntermediateToPython {
         String loopVar = init.getChild(0).getText();
 
         // check whether the loop condition is a single binary expression
-        if (!(ctx.getChild(0) instanceof IntASTBinaryExpression)) {
+        if (!(ctx.getChild(1) instanceof IntASTBinaryExpression)) {
             return false;
         }
-        IntASTBinaryExpression cond = (IntASTBinaryExpression) ctx.getChild(0);
+        IntASTBinaryExpression cond = (IntASTBinaryExpression) ctx.getChild(1);
 
         // check whether the condition is a simple less-than or greater-than comparison
         if (!cond.getOperator().getText().equals("<") && !cond.getOperator().getText().equals(">")) {
@@ -730,10 +745,15 @@ public class IntermediateToPython {
             return false;
         }
 
+        // check whether the forUpdate is a single expression
+        if (!(ctx.getChild(2) instanceof IntASTExpressionList && ctx.getChild(2).getChildCount() == 1)) {
+            return false;
+        }
+
         // check whether the forUpdate is a binary or unary expression
-        if (ctx.getChild(2) instanceof IntASTUnaryExpression) {
+        if (ctx.getChild(2).getChild(0) instanceof IntASTUnaryExpression) {
             // have a unary expression, ensure it's plus or minus
-            IntASTUnaryExpression forUpdate = (IntASTUnaryExpression) ctx.getChild(2);
+            IntASTUnaryExpression forUpdate = (IntASTUnaryExpression) ctx.getChild(2).getChild(0);
 
             if (!forUpdate.getOperator().getText().equals("++") && !forUpdate.getOperator().getText().equals("--")) {
                 return false;
@@ -746,7 +766,7 @@ public class IntermediateToPython {
             }
         } else {
             // have a binary expression, ensure its addition or subtraction
-            IntASTBinaryExpression forUpdate = (IntASTBinaryExpression) ctx.getChild(2);
+            IntASTBinaryExpression forUpdate = (IntASTBinaryExpression) ctx.getChild(2).getChild(0);
 
             if (!forUpdate.getOperator().getText().equals("+=") && !forUpdate.getOperator().getText().equals("-=")) {
                 return false;
@@ -775,20 +795,25 @@ public class IntermediateToPython {
         root.addChild(new PythonASTTerminal("for"));
 
         if (control.isEnhanced()) {
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
 
             /* Don't need to account for range() or len() for enhanced
             since you won't have the format --> (char letter : {a, b, c}) in java */
 
             // ExpressionList
-            expr_list.addChild(new PythonASTTerminal(identifiers.get(0).getText()));
-            root.addChild(expr_list.getChild(0));
+            atom.addChild(new PythonASTTerminal(identifiers.get(0).getText()));
+            atomExpression.addChild(atom);
+            expr_list.addChild(atomExpression);
+            root.addChild(expr_list);
 
             // Terminal 'in'
             root.addChild(new PythonASTTerminal("in"));
 
             //TestList
-            expr_list.addChild(visitExpression(exprs.get(0)));
-            root.addChild(expr_list.getChild(1));
+            expr_list = new PythonASTExpressionList();
+            expr_list.addChild(visitExpression(exprs.get(2)));
+            root.addChild(expr_list);
 
         } else {
             // Child 1: Expression List
@@ -798,40 +823,59 @@ public class IntermediateToPython {
              */
 
             if (isBasicForControl(control)) {
-                expr_list.addChild(visitExpression(exprs.get(0)));
-                root.addChild(expr_list);
+                PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+                PythonASTAtom atom = new PythonASTAtom();
+
+                atom.addChild(new PythonASTTerminal(control.getChild(0).getChild(0).getChild(0).getText()));
+                atomExpression.addChild(atom);
+                root.addChild(atomExpression);
                 root.addChild(new PythonASTTerminal("in"));
 
                 // Range Function
                 root.addChild(new PythonASTTerminal("range"));
                 root.addChild(new PythonASTTerminal("("));
 
-                // Start & stop conditions
-                for (int i = 0; i < 2; i++) {
-                    expr_list.addChild(new PythonASTTerminal(exprs.get(i).getChild(2).getText()));
-                    root.addChild(expr_list.getChild(expr_list.getChildCount() - 1));
+                // Start conditions
+                atomExpression = new PythonASTAtomExpression();
+                atom = new PythonASTAtom();
 
-                    root.addChild(new PythonASTTerminal(","));
-                }
+                atom.addChild(new PythonASTTerminal(control.getChild(0).getChild(0).getChild(2).getText()));
+                atomExpression.addChild(atom);
+                root.addChild(atomExpression);
+
+                root.addChild(new PythonASTTerminal(","));
+
+                // stop conditions
+                atomExpression = new PythonASTAtomExpression();
+                atom = new PythonASTAtom();
+
+                atom.addChild(new PythonASTTerminal(control.getChild(1).getChild(2).getText()));
+                atomExpression.addChild(atom);
+                root.addChild(atomExpression);
+
+                root.addChild(new PythonASTTerminal(","));
 
                 // Iterate Condition
-                if (((IntASTUnaryExpression) exprs.get(2)).getOperator().getText().equals("++")) {
-                    expr_list.addChild(new PythonASTTerminal("1"));
+                atomExpression = new PythonASTAtomExpression();
+                atom = new PythonASTAtom();
+                if (((IntASTUnaryExpression) control.getChild(2).getChild(0)).getOperator().getText().equals("++")) {
+                    atom.addChild(new PythonASTTerminal("1"));
 
-                } else if (((IntASTUnaryExpression) exprs.get(2)).getOperator().getText().equals("--") ) {
-                    expr_list.addChild(new PythonASTTerminal("-1"));
+                } else if (((IntASTUnaryExpression) control.getChild(2).getChild(0)).getOperator().getText().equals("--") ) {
+                    atom.addChild(new PythonASTTerminal("-1"));
 
                 } else {
                     throw new IllegalArgumentException("Invalid Iteration");
                 }
-               root.addChild(expr_list.getChild(expr_list.getChildCount() - 1));
+                atomExpression.addChild(atom);
+                root.addChild(atomExpression);
 
                 // End Range Function
                 root.addChild(new PythonASTTerminal(")"));
 
             } else {
                 /*
-                Fallback for-loop conversion
+                TODO Fallback for-loop conversion
 
                 for (expr1; expr2; expr3) {
                   ...
@@ -934,6 +978,12 @@ public class IntermediateToPython {
         root.addChild(atom);
         root.addChild(trail);
 
+        if (ctx.getIdentifier().getText().equals("System.out.print")) {
+            trail = new PythonASTTrailer();
+            trail.addChild(new PythonASTTerminal(","));
+            root.addChild(trail);
+        }
+
         return root;
     }
 
@@ -956,9 +1006,26 @@ public class IntermediateToPython {
     public PythonASTAtomExpression visitArrayInit(IntASTArrayInit ctx) {
         PythonASTAtomExpression root = new PythonASTAtomExpression();
         PythonASTAtom atom = new PythonASTAtom();
+        PythonASTExpressionList exprs = new PythonASTExpressionList();
 
         atom.addChild(new PythonASTTerminal ("["));
-        atom.addChild(visitExpression((IntASTExpression) ctx.getChild(0)));
+        if (ctx.getChildCount() != 0) {
+            for (int i = 0; i < ctx.getChildCount() - 1; i++) {
+                if (ctx.getChild(i) instanceof IntASTExpression) {
+                    exprs.addChild(visitExpression((IntASTExpression) ctx.getChild(i)));
+                } else {
+                    exprs.addChild(visitArrayInit((IntASTArrayInit) ctx.getChild(i)));
+                }
+                exprs.addChild(new PythonASTTerminal(","));
+            }
+            if (ctx.getChild(ctx.getChildCount() - 1) instanceof IntASTExpression) {
+                exprs.addChild(visitExpression((IntASTExpression) ctx.getChild(ctx.getChildCount() - 1)));
+            } else {
+                exprs.addChild(visitArrayInit((IntASTArrayInit) ctx.getChild(ctx.getChildCount() - 1)));
+            }
+        }
+
+        atom.addChild(exprs);
         atom.addChild(new PythonASTTerminal ("]"));
 
         root.addChild(atom);
@@ -1003,7 +1070,17 @@ public class IntermediateToPython {
                 // check for "this" identifier
                 StringBuilder str = new StringBuilder();
                 String[] split = id.split("\\.");
-                return new PythonASTTerminal(id);
+                for (int i = 0; i < split.length; i++) {
+                    if (split[i].equals("this")) {
+                        str.append("self");
+                    } else {
+                        str.append(split[i]);
+                    }
+                    if (i < split.length - 1) {
+                        str.append('.');
+                    }
+                }
+                return new PythonASTTerminal(str.toString());
         }
     }
 
@@ -1013,6 +1090,8 @@ public class IntermediateToPython {
                 return new PythonASTTerminal("or");
             case "&&":
                 return new PythonASTTerminal("and");
+            case "instanceof":
+                return new PythonASTTerminal("is");
 
             default:
                 return new PythonASTTerminal(ctx.getText());

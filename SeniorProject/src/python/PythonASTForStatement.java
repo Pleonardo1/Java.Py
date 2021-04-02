@@ -26,6 +26,7 @@ public class PythonASTForStatement extends AbstractPythonASTBranchNode {
                         " 'for', 'in', and 'else'; " + child.getText());
             }
         } else if (child instanceof PythonASTExpressionList
+                || child instanceof PythonASTAtomExpression
                 || child instanceof PythonASTSuite) {
             child.setParent(this);
             super.children.add(child);

@@ -9,7 +9,7 @@ public class PythonASTExpressionList extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTExpression) {
+        } else if (child instanceof PythonASTExpression || child.getText().equals(",")) {
             child.setParent(this);
             super.children.add(child);
         } else if (child instanceof PythonASTExpressionList) {

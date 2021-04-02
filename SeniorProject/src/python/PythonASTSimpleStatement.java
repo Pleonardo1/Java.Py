@@ -9,7 +9,7 @@ public class PythonASTSimpleStatement extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTSmallStatement) {
+        } else if (child instanceof PythonASTSmallStatement || child.getText().equals(";")) {
             child.setParent(this);
             super.children.add(child);
         } else if (child instanceof PythonASTTerminal.PythonASTNewline) {

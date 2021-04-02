@@ -44,12 +44,8 @@ public class IntASTFor extends AbstractIntASTBranchNode implements IntASTStateme
         return getChild(0, IntASTForControl.class);
     }
 
-    public List<IntASTStatement> getStatement() {
-        return getChildren(IntASTStatement.class);
+    public IntASTStatement getStatement() {
+        return getChild(0, IntASTStatement.class);
     }
-    
-    public IntASTStatement getStatement(int i) {
-            return getChild(i, IntASTStatement.class);
-        }
 
 }

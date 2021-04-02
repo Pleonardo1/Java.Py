@@ -9,7 +9,7 @@ public class PythonASTSmallStatement extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTExpressionStatement
+        } else if (child instanceof PythonASTExpression
 //                || child instanceof PythonASTDeleteStatement
                 || child instanceof PythonASTPassStatement
                 || child instanceof PythonASTFlowStatement

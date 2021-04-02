@@ -10,10 +10,15 @@ public class PythonASTForStatement extends AbstractPythonASTBranchNode {
         if (child == null) {
             return;
         } else if (child instanceof PythonASTTerminal) {
+
             if (child.getText().equals("for") 
                 || child.getText().equals("in")
                 || child.getText().equals("else")
-                || child.getText().equals(":")) {
+                || child.getText().equals(":")
+                || child.getText().equals("range")
+                || child.getText().equals("(")
+                || child.getText().equals(")")
+                || child.getText().equals(",")) {
                    child.setParent(this);
                    super.children.add(child);
             } else {

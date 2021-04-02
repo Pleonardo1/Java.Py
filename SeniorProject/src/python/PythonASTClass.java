@@ -3,8 +3,8 @@ import java.util.List;
 
 public class PythonASTClass extends AbstractPythonASTBranchNode {
     
-    public PythonASTClass (String className) {
-        super(className);
+    public PythonASTClass () {
+        super("");
     }
     
     @Override

@@ -1,8 +1,8 @@
  class MyNum:
- 	 num=5
- 	 	 	 	 	 	 	 def main (self):
- 	 	 	 	 	 test=newMyNum()
- 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 
+ 	 	 	 x=0
+ 	 	 y=1.0
+ 	 	 z=x+y
+ 	 	 
 
  m = MyNum() 
  m.main()

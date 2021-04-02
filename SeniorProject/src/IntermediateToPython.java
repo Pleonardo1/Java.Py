@@ -38,7 +38,7 @@ public class IntermediateToPython {
     public PythonASTStatement visitClass(IntASTClass ctx) {
         PythonASTStatement root = new PythonASTStatement();
         PythonASTCompoundStatement comp = new PythonASTCompoundStatement();
-        PythonASTClass cls = new PythonASTClass(ctx.getText());
+        PythonASTClass cls = new PythonASTClass();
 
         cls.addChild(new PythonASTTerminal("class"));
         cls.addChild(new PythonASTTerminal(ctx.getText()));
@@ -161,10 +161,11 @@ public class IntermediateToPython {
             }
             PythonASTSimpleStatement root = new PythonASTSimpleStatement();
 
-            for (IntASTExpression expr : exprs) {
-                root.addChild(visitExpression(expr));
+            for (int i = 0; i < exprs.size() - 1; i++) {
+                root.addChild(visitExpression(exprs.get(i)));
                 root.addChild(new PythonASTTerminal(";"));
             }
+            root.addChild(visitExpression(exprs.get(exprs.size() - 1)));
             root.addChild(new PythonASTTerminal.PythonASTNewline());
 
             return root;
@@ -187,14 +188,12 @@ public class IntermediateToPython {
 
         if (!ctx.isStatic()) {
             root.addChild(new PythonASTTerminal("self"));
-        }
-
-        if (ctx.getMethodParameters() != null) {
-            if (!ctx.isStatic()) {
+            if (ctx.getMethodParameters().getChildCount() != 0) {
                 root.addChild(new PythonASTTerminal(","));
             }
-            root.addChild(visitMethodParameters(ctx.getMethodParameters()));
         }
+
+        root.addChild(visitMethodParameters(ctx.getMethodParameters()));
 
         root.addChild(new PythonASTTerminal(")"));
 
@@ -221,13 +220,23 @@ public class IntermediateToPython {
         } else if (ctx instanceof IntASTExpressionList) {
             PythonASTStatement root = new PythonASTStatement();
             PythonASTSimpleStatement simple = new PythonASTSimpleStatement();
+            PythonASTSmallStatement small;
+            List<IntASTExpression> exprs = ((IntASTExpressionList) ctx).getExpression();
 
-            for (IntASTExpression expr : ((IntASTExpressionList) ctx).getExpression()) {
-                PythonASTSmallStatement small = new PythonASTSmallStatement();
-                small.addChild(visitExpression(expr));
+            if (exprs.isEmpty()) {
+                return null;
+            }
+
+            for (int i = 0; i < exprs.size() - 1; i++) {
+                small = new PythonASTSmallStatement();
+                small.addChild(visitExpression(exprs.get(i)));
                 simple.addChild(small);
                 simple.addChild(new PythonASTTerminal(";"));
             }
+            small = new PythonASTSmallStatement();
+            small.addChild(visitExpression(exprs.get(exprs.size() - 1)));
+            simple.addChild(small);
+
             root.addChild(simple);
 
             return root;
@@ -307,6 +316,7 @@ public class IntermediateToPython {
     }
 
     public PythonASTNode visitExpression(IntASTExpression ctx) {
+
         if (ctx instanceof IntASTTernaryExpression) {
             return visitTernaryExpression((IntASTTernaryExpression) ctx);
         } else if (ctx instanceof IntASTBinaryExpression) {
@@ -969,7 +979,11 @@ public class IntermediateToPython {
     }
 
     public PythonASTTerminal visitIdentifier(IntASTIdentifier ctx) {
-        switch (ctx.getText()) {
+        return convertIdentifier(ctx.getText());
+    }
+
+    private static PythonASTTerminal convertIdentifier(String id) {
+        switch (id) {
             case "double":
                 return new PythonASTTerminal("float");
             case "String":
@@ -980,8 +994,16 @@ public class IntermediateToPython {
                 return new PythonASTTerminal("int");
             case "char":
                 return new PythonASTTerminal("chr");
+            case "System.out.println":
+            case "System.out.print":
+                return new PythonASTTerminal("print");
+            case "System.out.printf":
+                return new PythonASTTerminal("printf");
             default:
-                return new PythonASTTerminal(ctx.getText());
+                // check for "this" identifier
+                StringBuilder str = new StringBuilder();
+                String[] split = id.split("\\.");
+                return new PythonASTTerminal(id);
         }
     }
 

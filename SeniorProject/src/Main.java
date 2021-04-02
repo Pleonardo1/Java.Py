@@ -15,7 +15,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        CharStream cs = CharStreams.fromFileName("./src/MyNum.java");
+        CharStream cs = CharStreams.fromFileName("SeniorProject/src/MyNum.java");
         JavaLexer javaLexer = new JavaLexer(cs);
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
@@ -24,6 +24,7 @@ public class Main {
         System.out.println("Intermediate tree conversion:");
         IntASTNode intNode = toIntermediate(tree);
         System.out.println("\n\n");
+
         System.out.println("Python tree conversion:");
         PythonASTNode pythonNode = intermediateToPython((IntASTCompilationUnit) intNode);
 
@@ -41,7 +42,7 @@ public class Main {
         pyCode.add("m"); pyCode.add("="); pyCode.add("MyNum()");
         pyCode.add("\n"); pyCode.add("m.main()");
 
-        FileWriter myWriter = new FileWriter("./WebApp/Output.txt");
+        FileWriter myWriter = new FileWriter("SeniorProject/WebApp/Output.txt");
         myWriter.write(printPy(pyCode));
         myWriter.close();
     }

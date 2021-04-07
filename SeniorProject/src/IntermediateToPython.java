@@ -79,8 +79,8 @@ public class IntermediateToPython {
     public PythonASTSuite visitClassBody(IntASTClassBody ctx) {
         PythonASTSuite root = new PythonASTSuite();
 
-        root.addChild(new PythonASTTerminal.PythonASTNewline());
         root.addChild(new PythonASTTerminal.PythonASTIndent());
+        root.addChild(new PythonASTTerminal.PythonASTNewline());
 
         for (IntASTMember node : ctx.getMember()) {
             root.addChild(visitMember(node));
@@ -126,19 +126,22 @@ public class IntermediateToPython {
         PythonASTSuite root = new PythonASTSuite();
         List<IntASTStatement> stmts = ctx.getStatement();
 
-        root.addChild(new PythonASTTerminal.PythonASTNewline());
         root.addChild(new PythonASTTerminal.PythonASTIndent());
+        root.addChild(new PythonASTTerminal.PythonASTNewline());
 
         if (stmts.isEmpty()) {
             PythonASTSimpleStatement simple = new PythonASTSimpleStatement();
             PythonASTSmallStatement small = new PythonASTSmallStatement();
+            PythonASTStatement stmt = new PythonASTStatement();
 
             small.addChild(new PythonASTPassStatement());
 
             simple.addChild(small);
             simple.addChild(new PythonASTTerminal.PythonASTNewline());
 
-            root.addChild(simple);
+            stmt.addChild(simple);
+
+            root.addChild(stmt);
         } else {
             for (IntASTStatement stmt : stmts) {
                 root.addChild(visitStatement(stmt));
@@ -243,6 +246,7 @@ public class IntermediateToPython {
             small = new PythonASTSmallStatement();
             small.addChild(visitExpression(exprs.get(exprs.size() - 1)));
             simple.addChild(small);
+            simple.addChild(new PythonASTTerminal.PythonASTNewline());
 
             root.addChild(simple);
 
@@ -412,10 +416,13 @@ public class IntermediateToPython {
         return root;
     }
 
+    // TODO Finish object instantiation logic
     public PythonASTAtomExpression visitNewExpression(IntASTNewExpression ctx) {
         PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
         PythonASTAtom atom = new PythonASTAtom();
         PythonASTTrailer trailer = new PythonASTTrailer();
+
+        // essentially just a method call with the object's name as the method name
 
         return null;
     }
@@ -979,9 +986,27 @@ public class IntermediateToPython {
         root.addChild(trail);
 
         if (ctx.getIdentifier().getText().equals("System.out.print")) {
-            trail = new PythonASTTrailer();
-            trail.addChild(new PythonASTTerminal(","));
-            root.addChild(trail);
+            trail.getChild(1).addChild(new PythonASTTerminal(","));
+
+            PythonASTBinaryExpression bin = new PythonASTBinaryExpression();
+            PythonASTAtomExpression atomExpr = new PythonASTAtomExpression();
+            atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("end"));
+            atomExpr.addChild(atom);
+
+            bin.addChild(atomExpr);
+            bin.addChild(new PythonASTTerminal("="));
+
+            atomExpr = new PythonASTAtomExpression();
+            atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("\"\""));
+            atomExpr.addChild(atom);
+
+            bin.addChild(atomExpr);
+
+            trail.getChild(1).addChild(bin);
         }
 
         return root;

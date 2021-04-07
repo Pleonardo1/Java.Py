@@ -18,6 +18,8 @@ import java.util.List;
  */
 public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
+
+
     /**
      * Top-level tree traversal. The node returned from this
      * represents an entire Java source file that has been stripped
@@ -184,9 +186,84 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         }
         // get the class body
         root.addChild(visitClassBody(ctx.classBody()));
-        // check whether the class is abstract
+
+        // identify the method and field names
+        identifyMembers(root, ctx.classBody());
+
+        // ensure method calls are prefixed by "this"
+        updateMethodCalls(root, root.getClassBody());
+
+        // TODO add "this" to class member variable references
+
         return root;
         // ignores generic-type arguments (the ones in "<>")
+    }
+
+    private void identifyMembers(IntASTClass cls, JavaParser.ClassBodyContext ctx) {
+        // do nothing if there's no declarations in the class body
+        if (ctx.classBodyDeclaration() == null) {
+            return;
+        }
+        // loop through the class body declarations for field names
+        outer:
+        for (JavaParser.ClassBodyDeclarationContext memberDecl : ctx.classBodyDeclaration()) {
+            // skip a declaration if it isn't a member
+            if (memberDecl.memberDecl() == null) {
+                continue;
+            }
+            // skip static members
+            for (JavaParser.ModifierContext mod : memberDecl.modifiers().modifier()) {
+                if (mod.STATIC() != null) {
+                    continue outer;
+                }
+            }
+            JavaParser.MemberDeclContext member = memberDecl.memberDecl();
+
+            // skip non-field members
+            if (member.memberDeclaration() == null) {
+                continue;
+            }
+            if (member.memberDeclaration().fieldDeclaration() == null) {
+                continue;
+            }
+            JavaParser.FieldDeclarationContext field = member.memberDeclaration().fieldDeclaration();
+
+            for (JavaParser.VariableDeclaratorContext var : field.variableDeclarators().variableDeclarator()) {
+                cls.addFieldName(var.variableDeclaratorId().Identifier().getText());
+            }
+        }
+
+        // get method names
+        for (IntASTMethod method : cls.getClassBody().getChildren(IntASTMethod.class)) {
+            if (!method.isStatic()) {
+                cls.addMethodName(method);
+            }
+        }
+    }
+
+    private void updateMethodCalls(IntASTClass cls, IntASTNode node) {
+        if (node instanceof IntASTMethodCall) {
+            IntASTMethodCall call = (IntASTMethodCall) node;
+            IntASTIdentifier id = call.getIdentifier();
+            String name = id.getText();
+
+            // check whether the method call matches a method's name and argument count
+            for (IntASTMethod method : cls.getMethodNames()) {
+                if (!method.getText().equals(name)) {
+                    continue;
+                }
+                IntASTMethodParameters params = method.getMethodParameters();
+                int args = call.getExpressionList().getChildCount();
+                int exp = method.getChildCount(IntASTIdentifier.class);
+                if (!params.isVarargs()) {
+                    if (args != exp) {
+                        continue;
+                    }
+                } else {
+                    // TODO Finish method name conversion
+                }
+            }
+        }
     }
 
     @Override
@@ -217,6 +294,9 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 for (JavaParser.ModifierContext mod : ctx.modifiers().modifier()) {
                     if (mod.ABSTRACT() != null) {
                         ((IntASTMethod) root).setAbstract(true);
+                    }
+                    if (mod.STATIC() != null) {
+                        root.setStatic(true);
                     }
                 }
             }

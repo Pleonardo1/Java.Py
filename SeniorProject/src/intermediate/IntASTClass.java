@@ -1,5 +1,7 @@
 package intermediate;
 
+import java.util.*;
+
 /**
  * Intermediate AST node that represents a class declaration. Since
  * Python does not have interfaces or abstract classes, these can
@@ -10,6 +12,8 @@ package intermediate;
 public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMember, IntASTStatement {
     private boolean isStatic = false;
     private boolean isAbstract = false;
+    private NavigableSet<String> fieldNames = new TreeSet<>();
+    private Set<IntASTMethod> methodNames = new HashSet<>();
 
     public IntASTClass(String className) {
         super(className);
@@ -52,6 +56,22 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
         }
     }
 
+    public void addFieldName(String name) {
+        this.fieldNames.add(name);
+    }
+
+    public void addMethodName(IntASTMethod name) {
+        this.methodNames.add(name);
+    }
+
+    public NavigableSet<String> getFieldNames() {
+        return Collections.unmodifiableNavigableSet(this.fieldNames);
+    }
+    
+    public Set<IntASTMethod> getMethodNames() {
+        return Collections.unmodifiableSet(this.methodNames);
+    }
+
     @Override
     public boolean isStatic() {
         return this.isStatic;
@@ -77,4 +97,6 @@ public class IntASTClass extends AbstractIntASTBranchNode implements IntASTMembe
     public IntASTClassBody getClassBody() {
         return getChild(0, IntASTClassBody.class);
     }
+
+
 }

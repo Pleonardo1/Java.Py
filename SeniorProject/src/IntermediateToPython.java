@@ -7,6 +7,9 @@ public class IntermediateToPython {
     public PythonASTFileInput visitCompilationUnit(IntASTCompilationUnit ctx) {
         PythonASTFileInput root = new PythonASTFileInput();
 
+        root.addChild(new PythonASTTerminal("import sys"));
+        root.addChild(new PythonASTTerminal.PythonASTNewline());
+
         // convert the imports
         for (IntASTImport node : ctx.getImportDeclaration()) {
             root.addChild(visitImport(node));
@@ -419,12 +422,16 @@ public class IntermediateToPython {
     // TODO Finish object instantiation logic
     public PythonASTAtomExpression visitNewExpression(IntASTNewExpression ctx) {
         PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
-        PythonASTAtom atom = new PythonASTAtom();
-        PythonASTTrailer trailer = new PythonASTTrailer();
+        //PythonASTTrailer trailer = new PythonASTTrailer();
 
         // essentially just a method call with the object's name as the method name
+        if (ctx.getChild(0) instanceof IntASTMethodCall) {
+            atomExpression.addChild(visitMethodCall((IntASTMethodCall) ctx.getChild(0)));
+        } else {
+            atomExpression.addChild(visitArrayInit((IntASTArrayInit) ctx.getChild(0)));
+        }
 
-        return null;
+        return atomExpression;
     }
 
     public PythonASTFlowStatement visitControl(IntASTControl ctx) {

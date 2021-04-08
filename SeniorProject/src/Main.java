@@ -4,18 +4,15 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import python.*;
-
 import java.io.FileWriter;
 import java.io.IOException;
-
-import java.util.List;
+import python.*;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        CharStream cs = CharStreams.fromFileName("./src/MyNum.java");
+        CharStream cs = CharStreams.fromFileName("SeniorProject/src/MyNum.java");
         JavaLexer javaLexer = new JavaLexer(cs);
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
@@ -48,7 +45,7 @@ public class Main {
         PythonASTNode out = python.visitCompilationUnit(root);
         FormatPy myPy = new FormatPy(out);
         
-        FileWriter myWriter = new FileWriter("./src/Output.txt");
+        FileWriter myWriter = new FileWriter("SeniorProject/src/Output.txt");
         myPy.output(myWriter);
         myWriter.close();
         

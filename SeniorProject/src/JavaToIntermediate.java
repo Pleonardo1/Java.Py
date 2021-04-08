@@ -3,6 +3,8 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 // TODO Determine a method of tracking whether a variable reference is local or global
 
@@ -184,22 +186,25 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         if (inherit.getChildCount() != 0) {
             root.addChild(inherit);
         }
+        // identify the field names
+        identifyFields(root, ctx.classBody());
+
+        NavigableSet<String> tmp = this.fieldNames;
+        this.fieldNames = new TreeSet<>(root.getFieldNames());
+
         // get the class body
         root.addChild(visitClassBody(ctx.classBody()));
 
-        // identify the method and field names
-        identifyMembers(root, ctx.classBody());
+        this.fieldNames = tmp;
 
         // ensure method calls are prefixed by "this"
         updateMethodCalls(root, root.getClassBody());
-
-        // TODO add "this" to class member variable references
 
         return root;
         // ignores generic-type arguments (the ones in "<>")
     }
 
-    private void identifyMembers(IntASTClass cls, JavaParser.ClassBodyContext ctx) {
+    private void identifyFields(IntASTClass cls, JavaParser.ClassBodyContext ctx) {
         // do nothing if there's no declarations in the class body
         if (ctx.classBodyDeclaration() == null) {
             return;
@@ -232,13 +237,6 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 cls.addFieldName(var.variableDeclaratorId().Identifier().getText());
             }
         }
-
-        // get method names
-        for (IntASTMethod method : cls.getClassBody().getChildren(IntASTMethod.class)) {
-            if (!method.isStatic()) {
-                cls.addMethodName(method);
-            }
-        }
     }
 
     private void updateMethodCalls(IntASTClass cls, IntASTNode node) {
@@ -249,22 +247,39 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
             // check whether the method call matches a method's name and argument count
             for (IntASTMethod method : cls.getMethodNames()) {
+                // check the method name
                 if (!method.getText().equals(name)) {
                     continue;
                 }
+                // check the parameter count
                 IntASTMethodParameters params = method.getMethodParameters();
                 int args = call.getExpressionList().getChildCount();
                 int exp = method.getChildCount(IntASTIdentifier.class);
                 if (!params.isVarargs()) {
                     if (args != exp) {
+                        // doesn't match method signature
                         continue;
                     }
                 } else {
-                    // TODO Finish method name conversion
+                    if (!(args == exp - 1 || args >= exp)) {
+                        // not enough arguments
+                        continue;
+                    }
                 }
+                // rename the method
+                name = "this." + name;
+                id.setText(name);
+                break;
+            }
+        } else if (!(node instanceof IntASTClass)) {
+            // do not perform this action for nested classes
+            for (IntASTNode child : node.getChildren()) {
+                updateMethodCalls(cls, child);
             }
         }
     }
+
+    private NavigableSet<String> fieldNames = null;
 
     @Override
     public IntASTClassBody visitClassBody(JavaParser.ClassBodyContext ctx) {
@@ -299,12 +314,134 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                         root.setStatic(true);
                     }
                 }
+                // decide whether the method is the main method or not
+                if (isMainMethod(ctx)) {
+                    ((IntASTMethod) root).setMain(true);
+                }
             }
             return root;
             // ignores all other modifiers on member declarations
         } else {
             return null;
         }
+    }
+
+    public static boolean isMainMethod(JavaParser.ClassBodyDeclarationContext ctx) {
+        // determine whether a given method is a Java program's main method
+        if (ctx.memberDecl() == null) {
+            return false;
+        }
+        boolean isPublic = false;
+        boolean isStatic = false;
+        for (JavaParser.ModifierContext mod : ctx.modifiers().modifier()) {
+            if (mod.PUBLIC() != null) {
+                isPublic = true;
+            }
+            if (mod.PROTECTED() != null) {
+                return false;
+            }
+            if (mod.PRIVATE() != null) {
+                return false;
+            }
+            if (mod.STATIC() != null) {
+                isStatic = true;
+            }
+            if (mod.ABSTRACT() != null) {
+                return false;
+            }
+            if (mod.NATIVE() != null) {
+                return false;
+            }
+            if (mod.TRANSIENT() != null) {
+                return false;
+            }
+            if (mod.VOLATILE() != null) {
+                return false;
+            }
+        }
+
+        // main method must be public static
+        // may also be final, synchronized, and/or strictfp
+        if (!isPublic || !isStatic) {
+            return false;
+        }
+
+        JavaParser.MemberDeclContext member = ctx.memberDecl();
+
+        // ensure the method name is "main"
+        if (!member.Identifier().getText().equals("main")) {
+            return false;
+        }
+
+        // ensure the method return type is "void"
+        if (member.VOID() == null) {
+            return false;
+        }
+        JavaParser.VoidMethodDeclaratorRestContext voidCtx = member.voidMethodDeclaratorRest();
+        JavaParser.FormalParametersContext formalParams = voidCtx.formalParameters();
+
+        // ensure we have method arguments
+        if (formalParams.formalParameterDecls() == null) {
+            return false;
+        }
+        JavaParser.FormalParameterDeclsContext paramDecl = formalParams.formalParameterDecls();
+        JavaParser.TypeContext type = paramDecl.type();
+
+        // ensure the argument is of the correct type
+        if (type.classOrInterfaceType() == null) {
+            return false;
+        }
+        JavaParser.ClassOrInterfaceTypeContext tp = type.classOrInterfaceType();
+
+        // ensure we have no type arguments
+        if (tp.typeArguments() != null && tp.typeArguments().size() != 0) {
+            return false;
+        }
+
+        // type name should be either "String" or "java.lang.String"
+        if (tp.Identifier().size() == 1) {
+            if (!tp.Identifier(0).getText().equals("String")) {
+                return false;
+            }
+        } else if (tp.Identifier().size() == 3) {
+            if (!tp.Identifier(0).getText().equals("java")) {
+                return false;
+            }
+            if (!tp.Identifier(1).getText().equals("lang")) {
+                return false;
+            }
+            if (!tp.Identifier(2).getText().equals("String")) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        // ensure that the argument is either array or varargs
+        JavaParser.FormalParameterDeclsRestContext rest = paramDecl.formalParameterDeclsRest();
+        JavaParser.VariableDeclaratorIdContext id = rest.variableDeclaratorId();
+        if (type.LBRACK().size() != 1) {
+            // no brackets on the argument type, so check for varargs or
+            if (rest.ELLIPSIS() != null) {
+                // have varargs, so ensur e no brackets on the variable
+                if (id.LBRACK().size() != 0) {
+                    return false;
+                }// don't have varargs, so ensure the variable has brackets
+                if (id.LBRACK().size() != 1) {
+                 return false;
+                }
+             } else {
+
+            }
+        } else {
+            // have one set of brackets on the argument type, so ensure no varargs or brackets on the variable
+            if (rest.ELLIPSIS() != null || id.LBRACK().size() != 0) {
+                return false;
+            }
+        }
+
+        // method signature matches a valid Java main method
+        return true;
     }
 
     @Override
@@ -412,6 +549,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTMember visitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
         IntASTField root = new IntASTField();
+        //
+        NavigableSet<String> tmp = new TreeSet<>();
         root.addChild(visitVariableDeclarators(ctx.variableDeclarators()));
         return root;
     }
@@ -481,6 +620,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTExpression visitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
         if (ctx.ASSIGN() != null) {
             IntASTBinaryExpression root = new IntASTBinaryExpression();
+
             root.addChild(visitVariableDeclaratorId(ctx.variableDeclaratorId()));
             root.addChild(new IntASTOperator("="));
             root.addChild(visitVariableInitializer(ctx.variableInitializer()));
@@ -494,9 +634,6 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTNode visitVariableDeclaratorId(JavaParser.VariableDeclaratorIdContext ctx) {
         // get variable name with array dimensions
         StringBuilder out = new StringBuilder(ctx.Identifier().getText());
-        for (int i = 0; i < ctx.LBRACK().size(); i++) {
-            out.append("[]");
-        }
         return new IntASTIdentifier(out.toString());
     }
 
@@ -1267,9 +1404,24 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             return root;
         } else {
             // TODO add array creator conversion
-            return null;
+
+            if (ctx.arrayCreatorRest() != null) {
+                return visitArrayCreatorRest(ctx.arrayCreatorRest());
+            }
+                        return null;
         }
     }
+
+    @Override
+    public IntASTExpression visitArrayCreatorRest(JavaParser.ArrayCreatorRestContext ctx) {
+        if (ctx.arrayInitializer() != null) {
+            return visitArrayInitializer(ctx.arrayInitializer());
+        } else {
+            return new IntASTArrayInit();
+        }
+    }
+
+
 
     @Override
     public IntASTIdentifier visitCreatedName(JavaParser.CreatedNameContext ctx) {

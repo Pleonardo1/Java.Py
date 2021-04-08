@@ -6,6 +6,7 @@ package intermediate;
 public class IntASTMethod extends AbstractIntASTBranchNode implements  IntASTMember {
     private boolean isStatic = false;
     private boolean isAbstract = false;
+    private boolean isMain = false;
 
     public IntASTMethod(String methodName) {
         super(methodName);
@@ -63,6 +64,14 @@ public class IntASTMethod extends AbstractIntASTBranchNode implements  IntASTMem
 
     public void setAbstract(boolean isAbstract) {
         this.isAbstract = isAbstract;
+    }
+
+    public boolean isMain() {
+        return this.isMain;
+    }
+
+    public void setMain(boolean isMain) {
+        this.isMain = isMain;
     }
 
     public IntASTMethodParameters getMethodParameters() {

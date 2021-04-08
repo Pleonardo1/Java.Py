@@ -1,8 +1,18 @@
- class MyNum:
- 	 	 	 x=0
- 	 	 y=1.0
- 	 	 z=x+y
- 	 	 
-
- m = MyNum() 
- m.main()
+import sys 
+class MyNum :
+	def __init__ (self , grade , letter ):
+		pass 
+	def method (self ):
+		x = [ 1 , 2 , 3 ] 
+		for i in range (0 , 3 , 1 ):
+			print (x , end = "" )
+	def method2 (self ):
+		x = 1 
+	def main (args ):
+		test1 = [ ] 
+		test2 = [ 1 , 2 , 3 ] 
+		array = [ 1 , 2 , 3 ] 
+		grade = 100 
+		letter = 'A' 
+		num = MyNum (grade , letter )
+		num.method ()

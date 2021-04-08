@@ -42,6 +42,7 @@ public class FormatPy {
                 switch (node.getText()) {
                     case "(":
                     case ")":
+                    case "[":
                     case ":":
                         break;
 

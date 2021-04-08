@@ -14,6 +14,9 @@ public class PythonASTExceptClause extends AbstractPythonASTBranchNode {
         } else if (child instanceof PythonASTExpression) {
             child.setParent(this);
             super.children.add(child);
+        } else if (child instanceof PythonASTArgument) {
+            child.setParent(this);
+            super.children.add(child);
         } else {
             throw new IllegalArgumentException("PythonASTExceptClause does not support children of type \""
                     + child.getClass().getName() + "\"");

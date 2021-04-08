@@ -42,7 +42,7 @@ public class IntASTMethodParameters extends AbstractIntASTBranchNode {
     }
     
     public boolean isVarargs() {
-        return super.children.get(super.children.size()-1).getText().equals("...");
+        return getOperator() != null;
     }
     
     public IntASTIdentifier getIdentifier(int i) {

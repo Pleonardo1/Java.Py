@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Stack;
 import java.util.TreeSet;
 
 // TODO Determine a method of tracking whether a variable reference is local or global
@@ -198,6 +199,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         this.fieldNames = tmp;
 
         // ensure method calls are prefixed by "this"
+        identifyMethods(root);
         updateMethodCalls(root, root.getClassBody());
 
         return root;
@@ -239,6 +241,15 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         }
     }
 
+    private void identifyMethods(IntASTClass cls) {
+        IntASTClassBody body = cls.getClassBody();
+        for (IntASTMethod method : body.getChildren(IntASTMethod.class)) {
+            if (!method.isStatic()) {
+                cls.addMethodName(method);
+            }
+        }
+    }
+
     private void updateMethodCalls(IntASTClass cls, IntASTNode node) {
         if (node instanceof IntASTMethodCall) {
             IntASTMethodCall call = (IntASTMethodCall) node;
@@ -254,7 +265,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 // check the parameter count
                 IntASTMethodParameters params = method.getMethodParameters();
                 int args = call.getExpressionList().getChildCount();
-                int exp = method.getChildCount(IntASTIdentifier.class);
+                int exp = params.getChildCount(IntASTIdentifier.class);
                 if (!params.isVarargs()) {
                     if (args != exp) {
                         // doesn't match method signature
@@ -423,15 +434,15 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         if (type.LBRACK().size() != 1) {
             // no brackets on the argument type, so check for varargs or
             if (rest.ELLIPSIS() != null) {
-                // have varargs, so ensur e no brackets on the variable
+                // have varargs, so ensure no brackets on the variable
                 if (id.LBRACK().size() != 0) {
                     return false;
-                }// don't have varargs, so ensure the variable has brackets
-                if (id.LBRACK().size() != 1) {
-                 return false;
                 }
              } else {
-
+                // don't have varargs, so ensure the variable has brackets
+                if (id.LBRACK().size() != 1) {
+                    return false;
+                }
             }
         } else {
             // have one set of brackets on the argument type, so ensure no varargs or brackets on the variable
@@ -455,10 +466,14 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             // non-generic void-return method
             IntASTMethod root = new IntASTMethod(ctx.Identifier().getText());
             JavaParser.VoidMethodDeclaratorRestContext voidCtx = ctx.voidMethodDeclaratorRest();
+            NavigableSet<String> tmp = new TreeSet<>();
+            this.blockNames.push(tmp);
             root.addChild(visitFormalParameters(voidCtx.formalParameters()));
             if (voidCtx.methodBody() != null) {
                 root.addChild(visitMethodBody(voidCtx.methodBody()));
             }
+            this.fieldNames.addAll(tmp);
+            this.blockNames.pop();
             return root;
         } else if (ctx.constructorDeclaratorRest() != null) {
             // non-generic constructor
@@ -515,10 +530,16 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTMethod visitMethodDeclaration(JavaParser.MethodDeclarationContext ctx) {
         IntASTMethod root = new IntASTMethod(ctx.Identifier().getText());
         JavaParser.MethodDeclaratorRestContext methCtx = ctx.methodDeclaratorRest();
+
+        NavigableSet<String> tmp = new TreeSet<>();
+        this.blockNames.push(tmp);
         root.addChild(visitFormalParameters(methCtx.formalParameters()));
         if (methCtx.methodBody() != null) {
             root.addChild(visitMethodBody(methCtx.methodBody()));
         }
+
+        this.blockNames.pop();
+        this.fieldNames.addAll(tmp);
         return root;
     }
 
@@ -527,9 +548,14 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         IntASTMethodParameters root = new IntASTMethodParameters();
         // the formalParameterDecls rule is recursive
         JavaParser.FormalParameterDeclsContext param = ctx.formalParameterDecls();
+        NavigableSet<String> names = this.blockNames.peek();
         while (param != null) {
             JavaParser.FormalParameterDeclsRestContext rest = param.formalParameterDeclsRest();
-            root.addChild(new IntASTIdentifier(rest.variableDeclaratorId().Identifier().getText()));
+            String name = rest.variableDeclaratorId().Identifier().getText();
+            if (this.fieldNames.remove(name)) {
+                names.add(name);
+            }
+            root.addChild(new IntASTIdentifier(name));
             if (rest.ELLIPSIS() != null) {
                 root.addChild(new IntASTOperator("..."));
             }
@@ -549,18 +575,28 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     @Override
     public IntASTMember visitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
         IntASTField root = new IntASTField();
-        //
+        // exclude the current field names from the identifying
         NavigableSet<String> tmp = new TreeSet<>();
+        this.blockNames.push(tmp);
         root.addChild(visitVariableDeclarators(ctx.variableDeclarators()));
+        
+        this.fieldNames.addAll(tmp);
+        this.blockNames.pop();
         return root;
     }
+
+    private Stack<NavigableSet<String>> blockNames = new Stack<>();
 
     @Override
     public IntASTBlock visitBlock(JavaParser.BlockContext ctx) {
         IntASTBlock root = new IntASTBlock();
+        NavigableSet<String> tmp = new TreeSet<>();
+        blockNames.push(tmp);
         for (JavaParser.BlockStatementContext block : ctx.blockStatement()) {
             root.addChild(visitBlockStatement(block));
         }
+        this.fieldNames.addAll(tmp);
+        blockNames.pop();
         return root;
     }
 
@@ -594,11 +630,18 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTStatement visitVariableDeclarators(JavaParser.VariableDeclaratorsContext ctx) {
         IntASTExpressionList root = new IntASTExpressionList();
         List<JavaParser.VariableDeclaratorContext> list = ctx.variableDeclarator();
+        NavigableSet<String> localNames = this.blockNames.peek();
         int i;
         // get the first variable declaration with assignment
         for (i = 0; i < list.size(); i++) {
             if (list.get(i).ASSIGN() != null) {
                 root.addChild(visitVariableDeclarator(list.get(i)));
+            }
+            String name = list.get(i).variableDeclaratorId().Identifier().getText();
+            if (this.fieldNames.remove(name)) {
+                localNames.add(name);
+            }
+            if (list.get(i).ASSIGN() != null) {
                 break;
             }
         }
@@ -606,6 +649,10 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         for (i++; i < list.size(); i++) {
             if (list.get(i).ASSIGN() != null) {
                 root.addChild(visitVariableDeclarator(list.get(i)));
+            }
+            String name = list.get(i).variableDeclaratorId().Identifier().getText();
+            if (this.fieldNames.remove(name)) {
+                localNames.add(name);
             }
         }
         // only return the node if variable declarations with assignment were found
@@ -707,8 +754,13 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         } else if (ctx.FOR() != null) {
             // for loop
             IntASTFor root = new IntASTFor();
+            // add a new set to the stack for the for control's variables
+            NavigableSet<String> tmp = new TreeSet<>();
+            this.blockNames.push(tmp);
             root.addChild(visitForControl(ctx.forControl()));
             root.addChild(visitStatement(ctx.statement(0)));
+            this.fieldNames.addAll(tmp);
+            this.blockNames.pop();
             return root;
 
         } else if (ctx.DO() != null) {
@@ -1356,7 +1408,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         } else if (ctx.Identifier() != null && ctx.Identifier().size() > 0) {
             // combine multiple identifiers (separated by ".") into a single identifier
             List<TerminalNode> ids = ctx.Identifier();
-            StringBuilder id = new StringBuilder(ids.get(0).getText());
+            String first = ids.get(0).getText();
+            StringBuilder id = new StringBuilder(first);
             for (int i = 1; i < ids.size(); i++) {
                 id.append('.').append(ids.get(i).getText());
             }
@@ -1365,10 +1418,19 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 IntASTNode tmp = visitIdentifierSuffix(ctx.identifierSuffix());
                 if (tmp instanceof IntASTExpressionList) {
                     IntASTMethodCall root = new IntASTMethodCall();
+                    // check whether or not the first part of the identifier was a field name
+                    if (ids.size() > 1 && this.fieldNames.contains(first)) {
+                        // beginning of the identifier is a field name
+                        id.insert(0, "this.");
+                    }
                     root.addChild(new IntASTIdentifier(id.toString()));
                     root.addChild(tmp);
                     return root;
                 }
+            }
+            // check whether or not the first part of the identifier was a field name
+            if (this.fieldNames.contains(first)) {
+                id.insert(0, "this.");
             }
             return new IntASTIdentifier(id.toString());
         } else if (ctx.primitiveType() != null) {
@@ -1535,9 +1597,15 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
     public IntASTForControl visitEnhancedForControl(JavaParser.EnhancedForControlContext ctx) {
 
         IntASTForControl root = new IntASTForControl();
-        root.addChild(new IntASTIdentifier(ctx.Identifier().getText()));
+
+        String name = ctx.Identifier().getText();
+        root.addChild(new IntASTIdentifier(name));
         root.addChild(new IntASTOperator(":"));
         root.addChild(visitExpression(ctx.expression()));
+
+        if (this.fieldNames.remove(name)) {
+            this.blockNames.peek().add(name);
+        }
 
         return root;
     }

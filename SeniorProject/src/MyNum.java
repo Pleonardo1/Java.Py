@@ -1,29 +1,84 @@
-
 public class MyNum {
-
-    public MyNum (int grade, char letter) {
-
-    }
-
-    public void method() {
-        int[] x = { 1, 2, 3 };
-
-        for (int i = 0; i < 3; i++) {
-            System.out.print(x[i]);
+    // This is a comment
+    public class TEST {
+        public void method() {
+            ;
         }
     }
 
-    public void method2() {
-        int x = 1;
+    public String testWhiles () { // This is another comment
+        int start = 0; /* this is another comment */
+        do {
+            if (start == 0) {
+                break;
+            }
+            do  {
+                if (start == 0) {
+                    break;
+                }
+            } while (true);
+        } while (true);
+
+        while (start < 3) {
+            System.out.println("Start");
+            start++;
+        }
+        return "goodBye";
     }
 
-    public static void main (String[] args) {
-        int [] test1 = new int[7];
-        int [] test2 = new int[] {1, 2, 3};
-        int array [] = {1,2,3};
-        int grade = 100;
-        char letter = 'A';
-        MyNum num = new MyNum(grade, letter);
-        num.method();
+    public static void main (String... args) {
+        MyNum myNum = new MyNum ();
+        String response = myNum.testWhiles();
+        testTryCatch();
+        testIfElse();
+        testEnhancedLoop();
+    }
+
+    public static void testTryCatch(){
+        try {
+            int crazyNum = 1*(4 + 6) - 85 / (3 % 2);
+        }
+        catch(Exception e) {
+            System.out.println("Whoops, I'm broken");
+        } finally {
+            System.out.print("TEST");
+        }
+    }
+
+
+
+    public static void testIfElse () {
+        int x = 50;
+        if (x <= 100) {
+            System.out.println("X is less than or equal to 100");
+        }
+        else if (x > 49) {
+            System.out.println("X is greater than 49");
+        }
+        else {
+            System.out.println("X is equal to 50");
+        }
+    }
+
+    public static void testEnhancedLoop () {
+        int [] numbers = {5, 10, 15, 20, 25};
+
+        for (int x : numbers) {
+            System.out.print (x);
+            System.out.print(",");
+        }
+        System.out.print("\n");
+        String [] names = {"Lexi", "Niki", "Patrick", "Josh"};
+
+        for(String name: names) {
+            System.out.print(name);
+            System.out.print(",");
+        }
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                System.out.println(i + " " + j);
+            }
+        }
     }
 }

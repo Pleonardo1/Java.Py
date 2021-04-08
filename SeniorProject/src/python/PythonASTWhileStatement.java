@@ -18,7 +18,8 @@ public class PythonASTWhileStatement extends AbstractPythonASTBranchNode {
                         " 'while', ':', and 'else'; " + child.getText());
             }
         } else if (child instanceof PythonASTExpression
-                || child instanceof PythonASTSuite) {
+                || child instanceof PythonASTSuite
+                || child instanceof PythonASTSimpleStatement) {
             child.setParent(this);
             super.children.add(child);
         } else {

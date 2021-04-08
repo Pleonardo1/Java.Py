@@ -13,7 +13,7 @@ public class PythonASTArgList extends AbstractPythonASTBranchNode {
         // ArgList is one or multiple arguments
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTArgument) {
+        } else if (child instanceof PythonASTArgument || child.getText().equals(",")) {
             //Arguments can be made up of "test" (identifier) assignments w/optional for loops (line 257 py grammar)
             child.setParent(this);
             super.children.add(child);

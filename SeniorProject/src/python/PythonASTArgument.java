@@ -12,13 +12,8 @@ public class PythonASTArgument extends AbstractPythonASTBranchNode{
             child.setParent(this);
             super.children.add(child);
         } else if (child instanceof PythonASTTerminal) {
-            if (child.getText().equals("=")) {
-                child.setParent(this);
-                super.children.add(child);
-            } else {
-                throw new IllegalArgumentException("PythonASTArgument only accepts the terminal child" +
-                                        " '='; " + child.getText());
-            }
+            child.setParent(this);
+            super.children.add(child);
         } else {
             throw new IllegalArgumentException("PythonASTArgument does not support children of type \""
                                 + child.getClass().getName() + "\"");

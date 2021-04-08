@@ -1,9 +1,13 @@
 import intermediate.*;
 import python.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class IntermediateToPython {
+
+    private List<PythonASTFunction> staticMethods = new ArrayList<>();
+
     public PythonASTFileInput visitCompilationUnit(IntASTCompilationUnit ctx) {
         PythonASTFileInput root = new PythonASTFileInput();
 
@@ -17,6 +21,119 @@ public class IntermediateToPython {
         // convert the class declarations
         for (IntASTClass node : ctx.getClassDeclaration()) {
             root.addChild(visitClass(node));
+        }
+
+        PythonASTFunction main = null;
+
+        // add the static methods
+        for (PythonASTFunction func : this.staticMethods) {
+            PythonASTStatement stmt = new PythonASTStatement();
+            PythonASTCompoundStatement comp = new PythonASTCompoundStatement();
+            if (func.isMain()) {
+                main = func;
+            } else {
+                comp.addChild(func);
+                stmt.addChild(comp);
+
+                root.addChild(stmt);
+            }
+        }
+
+        if (main != null) {
+            /*
+            if __name__ == "__main__":
+                /args/ = sys.argv
+                ...
+             */
+            PythonASTIfStatement ifStmt = new PythonASTIfStatement();
+            PythonASTBinaryExpression bin = new PythonASTBinaryExpression();
+
+            // define the if condition
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("__name__"));
+            atomExpression.addChild(atom);
+            bin.addChild(atomExpression);
+
+            bin.addChild(new PythonASTTerminal("=="));
+
+            atomExpression = new PythonASTAtomExpression();
+            atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("\"__main__\""));
+            atomExpression.addChild(atom);
+
+            bin.addChild(atomExpression);
+
+            // add the condition to the if statement
+            ifStmt.addChild(new PythonASTTerminal("if"));
+            ifStmt.addChild(bin);
+            ifStmt.addChild(new PythonASTTerminal(":"));
+
+                /*
+                if __name__ == "__main__":
+                 */
+
+            // get the main argument name
+            PythonASTParametersList params = main.getChild(0, PythonASTParametersList.class);
+            PythonASTTfpdef tfpdef = params.getChild(0, PythonASTTfpdef.class);
+            PythonASTTerminal name = tfpdef.getChild(0, PythonASTTerminal.class);
+            if (name.getText().startsWith("*")) {
+                name.setText(name.getText().substring(1));
+            }
+
+            // assign sys.argv to the main argument name
+            bin = new PythonASTBinaryExpression();
+            atomExpression = new PythonASTAtomExpression();
+            atom = new PythonASTAtom();
+
+            atom.addChild(name);
+            atomExpression.addChild(atom);
+            bin.addChild(atomExpression);
+
+            bin.addChild(new PythonASTTerminal("="));
+
+            atomExpression = new PythonASTAtomExpression();
+            atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("sys.argv"));
+            atomExpression.addChild(atom);
+            bin.addChild(atomExpression);
+
+            // add "/args/ = sys.argv" to a suite object
+            PythonASTSuite suite = new PythonASTSuite();
+            PythonASTStatement stmt = new PythonASTStatement();
+            PythonASTSimpleStatement simple = new PythonASTSimpleStatement();
+            PythonASTSmallStatement small = new PythonASTSmallStatement();
+
+            small.addChild(bin);
+            simple.addChild(small);
+            simple.addChild(new PythonASTTerminal.PythonASTNewline());
+            stmt.addChild(simple);
+
+            suite.addChild(new PythonASTTerminal.PythonASTNewline());
+            suite.addChild(new PythonASTTerminal.PythonASTIndent());
+            suite.addChild(stmt);
+
+            // add the remainder of the main method to the suite
+            for (PythonASTNode node : main.getChild(0, PythonASTSuite.class).getChildren(PythonASTStatement.class)) {
+                suite.addChild(node);
+            }
+
+            suite.addChild(new PythonASTTerminal.PythonASTDedent());
+
+            // add the suite to the if statement
+            ifStmt.addChild(suite);
+
+            // add the if statement to a statement
+            stmt = new PythonASTStatement();
+            PythonASTCompoundStatement comp = new PythonASTCompoundStatement();
+
+            comp.addChild(ifStmt);
+            stmt.addChild(comp);
+
+            root.addChild(stmt);
         }
 
         return root;
@@ -69,13 +186,18 @@ public class IntermediateToPython {
             return null;
         }
         PythonASTArgList root = new PythonASTArgList();
+        PythonASTArgument arg;
 
         //Can have single argument or more
         for (int i = 0; i < types.size() - 1; i++) {
-            root.addChild(visitTerminal(types.get(i)));
+            arg = new PythonASTArgument();
+            arg.addChild(visitTerminal(types.get(i)));
+            root.addChild(arg);
             root.addChild(new PythonASTTerminal(","));
         }
-        root.addChild(visitTerminal(types.get(types.size()-1)));
+        arg = new PythonASTArgument();
+        arg.addChild(visitTerminal(types.get(types.size()-1)));
+        root.addChild(arg);
         return root;
     }
 
@@ -101,9 +223,7 @@ public class IntermediateToPython {
             return visitBlock((IntASTBlock) ctx);
 
         } else if (ctx instanceof IntASTClass) {
-            PythonASTCompoundStatement stmt = new PythonASTCompoundStatement();
-            stmt.addChild(visitClass((IntASTClass) ctx));
-            root.addChild(stmt);
+            return visitClass((IntASTClass) ctx);
 
         } else if (ctx instanceof IntASTField) {
             root.addChild(visitField((IntASTField) ctx));
@@ -210,13 +330,24 @@ public class IntermediateToPython {
 
         root.addChild(new PythonASTTerminal(")"));
 
-
         root.addChild(new PythonASTTerminal(":"));
 
         if (ctx.getBlock() != null) {
-            root.addChild(visitBlock(ctx.getBlock()));
+            PythonASTSuite suite = visitBlock(ctx.getBlock());
+            // add a newline to aesthetically separate the method definitions
+            suite.addChild(new PythonASTTerminal.PythonASTNewline());
+            root.addChild(suite);
         }
-        return root;
+
+        if (ctx.isStatic()) {
+            this.staticMethods.add(root);
+            if (ctx.isMain()) {
+                root.setMain(true);
+            }
+            return null;
+        } else {
+            return root;
+        }
     }
 
     public PythonASTFunction visitConstructor (IntASTConstructor ctx) {
@@ -328,6 +459,11 @@ public class IntermediateToPython {
         tfpdef.addChild(visitTerminal(params.get(params.size()-1)));
         root.addChild(tfpdef);
 
+        // define as varargs
+        if (ctx.isVarargs()) {
+            tfpdef.getChild(0).setText("*" + tfpdef.getChild(0).getText());
+        }
+
         return root;
     }
 
@@ -349,7 +485,6 @@ public class IntermediateToPython {
         } else if (ctx instanceof IntASTCastExpression) {
             return visitCastExpression((IntASTCastExpression) ctx);
         } else if (ctx instanceof IntASTNewExpression) {
-            // TODO convert new expression
             return visitNewExpression((IntASTNewExpression) ctx);
         } else if (ctx instanceof IntASTMethodCall) {
             return visitMethodCall((IntASTMethodCall) ctx);
@@ -392,16 +527,43 @@ public class IntermediateToPython {
         return root;
     }
 
-    public PythonASTUnaryExpression visitUnaryExpression(IntASTUnaryExpression ctx) {
-        PythonASTUnaryExpression root = new PythonASTUnaryExpression();
+    public PythonASTExpression visitUnaryExpression(IntASTUnaryExpression ctx) {
+        PythonASTExpression root;
 
-        // determine if the expression is prefix or postfix
+        if (ctx.getOperator().getText().equals("++")) {
+            root = new PythonASTBinaryExpression();
+            root.addChild(visitExpression(ctx.getExpressionNotOperator()));
+            root.addChild(new PythonASTTerminal("+="));
+
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("1"));
+            atomExpression.addChild(atom);
+
+            root.addChild(atomExpression);
+        } else if (ctx.getOperator().getText().equals("--")) {
+            root = new PythonASTBinaryExpression();
+            root.addChild(visitExpression(ctx.getExpressionNotOperator()));
+            root.addChild(new PythonASTTerminal("-="));
+
+            PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
+            PythonASTAtom atom = new PythonASTAtom();
+
+            atom.addChild(new PythonASTTerminal("1"));
+            atomExpression.addChild(atom);
+
+            root.addChild(atomExpression);
+        } else
+            // determine if the expression is prefix or postfix
         if (ctx.getChild(0) instanceof IntASTOperator) {
             // prefix
+            root = new PythonASTUnaryExpression();
             root.addChild(visitTerminal(ctx.getOperator()));
             root.addChild(visitExpression(ctx.getExpressionNotOperator()));
         } else {
             // postfix
+            root = new PythonASTUnaryExpression();
             root.addChild(visitExpression(ctx.getExpressionNotOperator()));
             root.addChild(visitTerminal(ctx.getOperator()));
         }
@@ -413,13 +575,14 @@ public class IntermediateToPython {
         PythonASTAtomExpression root = new PythonASTAtomExpression();
         PythonASTAtom atom = new PythonASTAtom();
 
+        atom.addChild(new PythonASTTerminal("("));
         atom.addChild(visitExpression(ctx.getExpression()));
+        atom.addChild(new PythonASTTerminal(")"));
         root.addChild(atom);
 
         return root;
     }
 
-    // TODO Finish object instantiation logic
     public PythonASTAtomExpression visitNewExpression(IntASTNewExpression ctx) {
         PythonASTAtomExpression atomExpression = new PythonASTAtomExpression();
         //PythonASTTrailer trailer = new PythonASTTrailer();
@@ -534,7 +697,7 @@ public class IntermediateToPython {
             //Finally
             root.addChild(new PythonASTTerminal("finally"));
             root.addChild(new PythonASTTerminal(":"));
-            root.addChild(visitBlock(ctx.getBlock(ctx.getChildCount() - 1)));
+            root.addChild(visitBlock(ctx.getBlock(ctx.getChildCount(IntASTBlock.class) - 1)));
         }
 
         return root;
@@ -624,7 +787,7 @@ public class IntermediateToPython {
         String firstLoop = "__is_first_loop_" + this.doWhileFirstLoopId++;
 
         PythonASTWhileStatement root = new PythonASTWhileStatement();
-        PythonASTSimpleStatement stmt = new PythonASTSimpleStatement();
+        PythonASTSimpleStatement simple_stmt = new PythonASTSimpleStatement();
         PythonASTSmallStatement small_stmt = new PythonASTSmallStatement();
         PythonASTBinaryExpression bin_expr = new PythonASTBinaryExpression();
 
@@ -637,10 +800,10 @@ public class IntermediateToPython {
 
         small_stmt.addChild(bin_expr);
 
-        stmt.addChild(small_stmt);
-        stmt.addChild(new PythonASTTerminal.PythonASTNewline());
+        simple_stmt.addChild(small_stmt);
+        simple_stmt.addChild(new PythonASTTerminal.PythonASTNewline());
 
-        root.addChild(stmt);
+        root.addChild(simple_stmt);
 
         /*
          __is_first_loop_XX = True
@@ -663,7 +826,7 @@ public class IntermediateToPython {
          */
         PythonASTSuite suite = new PythonASTSuite();
 
-        stmt = new PythonASTSimpleStatement();
+        simple_stmt = new PythonASTSimpleStatement();
         small_stmt = new PythonASTSmallStatement();
         bin_expr = new PythonASTBinaryExpression();
 
@@ -673,8 +836,11 @@ public class IntermediateToPython {
 
         small_stmt.addChild(bin_expr);
 
-        stmt.addChild(small_stmt);
-        stmt.addChild(new PythonASTTerminal.PythonASTNewline());
+        simple_stmt.addChild(small_stmt);
+        simple_stmt.addChild(new PythonASTTerminal.PythonASTNewline());
+
+        PythonASTStatement stmt = new PythonASTStatement();
+        stmt.addChild(simple_stmt);
 
         suite.addChild(new PythonASTTerminal.PythonASTNewline());
         suite.addChild(new PythonASTTerminal.PythonASTIndent());
@@ -937,7 +1103,7 @@ public class IntermediateToPython {
         } else if (exprs.get(0) instanceof IntASTParExpression) {
             root.addChild(visitParExpression((IntASTParExpression) exprs.get(0)).getChild(0));
         } else if (exprs.get(0) instanceof IntASTNewExpression) {
-            // TODO write new expression conversion
+            root.addChild(visitNewExpression((IntASTNewExpression) exprs.get(0)));
         } else {
             PythonASTAtom atom = new PythonASTAtom();
 
@@ -1071,7 +1237,8 @@ public class IntermediateToPython {
 
         } else if (ctx instanceof IntASTIdentifier) {
             return visitIdentifier((IntASTIdentifier) ctx);
-
+        } else if (ctx instanceof IntASTLiteral) {
+            return visitLiteral((IntASTLiteral) ctx);
         } else {
             return new PythonASTTerminal(ctx.getText());
         }
@@ -1125,6 +1292,17 @@ public class IntermediateToPython {
             case "instanceof":
                 return new PythonASTTerminal("is");
 
+            default:
+                return new PythonASTTerminal(ctx.getText());
+        }
+    }
+
+    public PythonASTTerminal visitLiteral(IntASTLiteral ctx) {
+        switch (ctx.getText()) {
+            case "true":
+                return new PythonASTTerminal("True");
+            case "false":
+                return new PythonASTTerminal("False");
             default:
                 return new PythonASTTerminal(ctx.getText());
         }

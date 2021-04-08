@@ -1,6 +1,8 @@
 package python;
 
 public class PythonASTFunction extends AbstractPythonASTBranchNode {
+    private boolean isMain = false;
+    
     public PythonASTFunction() {
         super("");
     }
@@ -21,6 +23,14 @@ public class PythonASTFunction extends AbstractPythonASTBranchNode {
             throw new IllegalArgumentException("PythonASTFunctionStatement does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
+    }
+    
+    public boolean isMain() {
+        return this.isMain;
+    }
+    
+    public void setMain(boolean isMain) {
+        this.isMain = isMain;
     }
 }
 

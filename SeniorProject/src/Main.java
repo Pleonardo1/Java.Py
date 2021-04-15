@@ -12,7 +12,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        CharStream cs = CharStreams.fromFileName("./src/MyNum.java");
+        CharStream cs = CharStreams.fromFileName("SeniorProject/src/MyNum.java");
         JavaLexer javaLexer = new JavaLexer(cs);
         CommonTokenStream token = new CommonTokenStream(javaLexer);
         JavaParser parser = new JavaParser(token);
@@ -45,7 +45,7 @@ public class Main {
         PythonASTNode out = python.visitCompilationUnit(root);
         FormatPy myPy = new FormatPy(out);
         
-        FileWriter myWriter = new FileWriter("./src/Output.txt");
+        FileWriter myWriter = new FileWriter("SeniorProject/src/Output.txt");
         myPy.output(myWriter);
         myWriter.close();
         

@@ -479,8 +479,14 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
             // non-generic constructor
             IntASTConstructor root = new IntASTConstructor(ctx.Identifier().getText());
             JavaParser.ConstructorDeclaratorRestContext constCtx = ctx.constructorDeclaratorRest();
+
+            NavigableSet<String> tmp = new TreeSet<>();
+            this.blockNames.push(tmp);
             root.addChild(visitFormalParameters(constCtx.formalParameters()));
             root.addChild(visitConstructorBody(constCtx.constructorBody()));
+            this.fieldNames.addAll(tmp);
+            this.blockNames.pop();
+
             return root;
         } else if (ctx.interfaceDeclaration() != null) {
             return visitInterfaceDeclaration(ctx.interfaceDeclaration());

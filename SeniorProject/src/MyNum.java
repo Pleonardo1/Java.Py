@@ -1,6 +1,11 @@
 public class MyNum {
     // This is a comment
-    public class TEST {
+    public class Test {
+
+        public Test () {
+
+        }
+
         public void method() {
             ;
         }
@@ -45,8 +50,6 @@ public class MyNum {
         }
     }
 
-
-
     public static void testIfElse () {
         int x = 50;
         if (x <= 100) {
@@ -75,9 +78,11 @@ public class MyNum {
             System.out.print(",");
         }
 
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                System.out.println(i + " " + j);
+        System.out.println();
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 1; j++) {
+                System.out.println(j);
             }
         }
     }

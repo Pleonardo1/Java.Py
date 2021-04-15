@@ -1,8 +1,11 @@
 import sys 
 class MyNum :
-	class TEST :
+	class Test :
+		def __init__ (self ):
+			pass 
+
 		def method (self ):
-			pass
+			pass 
 
 	def testWhiles (self ):
 		start = 0 
@@ -11,14 +14,14 @@ class MyNum :
 			__is_first_loop_0 = False 
 			if (start == 0 ):
 				break 
-			__is_first_loop_1 = True
+			__is_first_loop_1 = True 
 			while __is_first_loop_1 or (True ):
-				__is_first_loop_1 = False
+				__is_first_loop_1 = False 
 				if (start == 0 ):
-					break
+					break 
 		while (start < 3 ):
 			print ("Start" )
-			start += 1
+			start += 1 
 		return "goodBye" 
 
 def testTryCatch ():
@@ -48,12 +51,13 @@ def testEnhancedLoop ():
 	for name in names :
 		print (name , end = "" )
 		print ("," , end = "" )
-	for i in range (0 , 10 , 1 ):
-		for j in range (0 , 10 , 1 ):
-			print (i + " " + j )
+	print ()
+	for i in range (0 , 2 , 1 ):
+		for j in range (0 , 1 , 1 ):
+			print (j )
 
 if __name__ == "__main__" :
-	args = sys.argv
+	args = sys.argv 
 	myNum = MyNum ()
 	response = myNum.testWhiles ()
 	testTryCatch ()

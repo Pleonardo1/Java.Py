@@ -3,8 +3,11 @@ import intermediate.IntASTNode;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -34,65 +37,71 @@ public class Main extends Application {
         // Java Tools
         Label java_label = new Label("Java Code");
         TextArea javaArea = new TextArea();
+        Button import_ = new Button("Import");
         Button convert = new Button("Convert");
+
+        FileChooser fileChooser1 = new FileChooser();
+        fileChooser1.setTitle("Open Image");
+        fileChooser1.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Java Files", "*.java"));
+
+        // Import button
+        import_.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                //Opening a dialog box
+                File f = fileChooser1.showOpenDialog(primaryStage);
+                java_label.setText("Java: " + f.toString());
+                read(javaArea, f.toString());
+            }});
 
         // Python Tools
         Label py_label = new Label("Python Code");
         TextArea pythonArea = new TextArea();
         Button copy = new Button("Copy");
+        Button save = new Button("Save");
 
-        // Button Handlers
-        convert.setOnAction(new EventHandler<ActionEvent>() {
+        FileChooser fileChooser2 = new FileChooser();
+        fileChooser2.setTitle("Save");
+        fileChooser2.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Python Files", "*.py"));
 
+        // Save button
+        save.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-
-                ObservableList<CharSequence> paragraph = javaArea.getParagraphs();
-                Iterator<CharSequence> iter = paragraph.iterator();
-                try
-                {
-                    BufferedWriter input = new BufferedWriter(new FileWriter(new File("SeniorProject/src/Input.txt")));
-                    while(iter.hasNext())
-                    {
-                        CharSequence seq = iter.next();
-                        input.append(seq);
-                        input.newLine();
-                    }
-                    input.flush();
-                    input.close();
-                } catch (IOException e)
-                {
-                    e.printStackTrace();
-                }
-
-                // Generate Trees and Output
-                treeGeneration();
+                //Opening a dialog box
+                File f = fileChooser2.showSaveDialog(primaryStage);
+                String py_code = pythonArea.getText();
 
                 try {
-                    BufferedReader output = new BufferedReader(new FileReader("SeniorProject/src/Output.txt"));
-                    StringBuilder sb = new StringBuilder();
-                    String line = output.readLine();
-
-                    while (line != null) {
-                        sb.append(line);
-                        sb.append(System.lineSeparator());
-                        line = output.readLine();
-                    }
-                    String everything = sb.toString();
-                    output.close();
-
-                    pythonArea.setText(everything);
+                    FileWriter fw = new FileWriter(f);
+                    fw.write(py_code);
+                    fw.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
             }
         });
 
-        // TODO: Copy to Clipboard Button
+        // Convert Button
+        convert.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                write(javaArea, "SeniorProject/src/Input.txt");
+                treeGeneration();
+                read(pythonArea, "SeniorProject/src/Output.txt");
+            }
+        });
+
+        // Create Clipboard
+        final Clipboard clipboard = Clipboard.getSystemClipboard();
+        final ClipboardContent content = new ClipboardContent();
+
+        // Copy Button
         copy.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-
+                content.putString(pythonArea.getText());
+                clipboard.setContent(content);
             }
         });
 
@@ -101,23 +110,64 @@ public class Main extends Application {
         gp.setHgap(10);
         gp.setVgap(10);
 
-        //Java Box
+        //Java Item Positioning
         gp.add(java_label, 1, 1, 1, 1);
         gp.add(javaArea, 1, 2, 1, 5);
-        gp.add(convert, 1, 7, 1, 1);
+        gp.add(import_, 1, 7, 1, 1);
+        gp.add(convert, 1, 8, 1, 1);
 
-        //Python Box
-        gp.add(py_label, 1, 9, 1, 1);
-        gp.add(pythonArea, 1, 10, 1, 5);
-        gp.add(copy, 1, 15, 1, 1);
+        //Python Item Positioning
+        gp.add(py_label, 1, 10, 1, 1);
+        gp.add(pythonArea, 1, 11, 1, 5);
+        gp.add(copy, 1, 16, 1, 1);
+        gp.add(save, 1, 17, 1, 1);
 
         primaryStage.setTitle("Java.Py");
         primaryStage.setScene(new Scene(gp, 1000, 600));
         primaryStage.show();
     }
 
+    public static void write (TextArea area, String path) {
+        ObservableList<CharSequence> paragraph = area.getParagraphs();
+        Iterator<CharSequence> iter = paragraph.iterator();
+        try
+        {
+            BufferedWriter input = new BufferedWriter(new FileWriter(new File(path)));
+            while(iter.hasNext())
+            {
+                CharSequence seq = iter.next();
+                input.append(seq);
+                input.newLine();
+            }
+            input.flush();
+            input.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public static void read (TextArea area, String path) {
+        try {
+            BufferedReader output = new BufferedReader(new FileReader(path));
+            StringBuilder sb = new StringBuilder();
+            String line = output.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = output.readLine();
+            }
+            String everything = sb.toString();
+            output.close();
+
+            area.setText(everything);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void treeGeneration() {
-        // TODO CALL TO CONVERT OUTPUT
         CharStream cs = null;
         try {
             cs = CharStreams.fromFileName("SeniorProject/src/Input.txt");

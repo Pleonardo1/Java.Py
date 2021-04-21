@@ -8,6 +8,8 @@ import java.util.List;
  * root of the AST may not always be an instance of this class.
  */
 public class IntASTCompilationUnit extends AbstractIntASTBranchNode {
+    private boolean hasMain = false;
+
     public IntASTCompilationUnit() {
         super("");
     }
@@ -58,6 +60,14 @@ public class IntASTCompilationUnit extends AbstractIntASTBranchNode {
             throw new IllegalArgumentException("IntASTCompilationUnit does not support children of type \""
                     + child.getClass().getName() + "\"");
         }
+    }
+
+    public boolean hasMain() {
+        return this.hasMain;
+    }
+
+    public void hasMain(boolean hasMain) {
+        this.hasMain = hasMain;
     }
 
     // convenience methods

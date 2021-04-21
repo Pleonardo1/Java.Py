@@ -1,21 +1,26 @@
 import intermediate.IntASTCompilationUnit;
 import intermediate.IntASTNode;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.image.Image;
+import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+
+
 import java.io.*;
 import java.util.Iterator;
-import java.util.stream.Collectors;
 
 import python.*;
 
@@ -24,7 +29,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.StackPane;
+
 import javafx.stage.Stage;
 
 
@@ -36,32 +41,58 @@ public class Main extends Application {
 
         // Java Tools
         Label java_label = new Label("Java Code");
+        java_label.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+
         TextArea javaArea = new TextArea();
         Button import_ = new Button("Import");
         Button convert = new Button("Convert");
+        Button clear = new Button("Clear");
+
+        javaArea.setPrefHeight(525);
+        javaArea.setStyle("-fx-control-inner-background:#454545");
+
+        import_.setPrefWidth(70);
+        convert.setPrefWidth(70);
+        clear.setPrefWidth(70);
 
         FileChooser fileChooser1 = new FileChooser();
         fileChooser1.setTitle("Open Image");
         fileChooser1.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Java Files", "*.java"));
+
+        // Python Tools
+        Label py_label = new Label("Python Code");
+        py_label.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+
+        TextArea pythonArea = new TextArea();
+        Button copy = new Button("Copy");
+        Button save = new Button("Save");
+
+        pythonArea.setPrefHeight(525);
+        pythonArea.setStyle("-fx-control-inner-background:#454545");
+
+        copy.setPrefWidth(70);
+        save.setPrefWidth(70);
+
+        FileChooser fileChooser2 = new FileChooser();
+        fileChooser2.setTitle("Save");
+        fileChooser2.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Python Files", "*.py"));
 
         // Import button
         import_.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 //Opening a dialog box
                 File f = fileChooser1.showOpenDialog(primaryStage);
-                java_label.setText("Java: " + f.toString());
+                //java_label.setText("Java Code: " + f.toString());
                 read(javaArea, f.toString());
             }});
 
-        // Python Tools
-        Label py_label = new Label("Python Code");
-        TextArea pythonArea = new TextArea();
-        Button copy = new Button("Copy");
-        Button save = new Button("Save");
+        clear.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                javaArea.setText("");
+                pythonArea.setText("");
+                //java_label.setText("Java Code");
+            }});
 
-        FileChooser fileChooser2 = new FileChooser();
-        fileChooser2.setTitle("Save");
-        fileChooser2.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Python Files", "*.py"));
 
         // Save button
         save.setOnAction(new EventHandler<ActionEvent>() {
@@ -105,25 +136,41 @@ public class Main extends Application {
             }
         });
 
+        Image image = new Image("File:SeniorProject/src/JavaPy2.png");
+        ImageView view = new ImageView(image);
+        view.setPreserveRatio(true);
+        view.setFitHeight(90);
+        //view.setFitWidth(100);
+
         // Scene Order
         GridPane gp = new GridPane();
+        //gp.setStyle("-fx-background: rgb(50,50,50);");
         gp.setHgap(10);
         gp.setVgap(10);
 
+        BorderPane bp = new BorderPane();
+        bp.setStyle("-fx-background: rgb(50,50,50);");
+        bp.setTop(view);
+        bp.setMargin(view, new Insets(10, 0, 20, 10));
+
         //Java Item Positioning
+        //gp.add(view, 1, 0, 2, 1);
         gp.add(java_label, 1, 1, 1, 1);
         gp.add(javaArea, 1, 2, 1, 5);
-        gp.add(import_, 1, 7, 1, 1);
-        gp.add(convert, 1, 8, 1, 1);
+        gp.add(import_, 2, 2, 1, 1);
+        gp.add(convert, 2, 3, 1, 1);
+        gp.add(clear, 2, 4, 1, 1);
 
         //Python Item Positioning
-        gp.add(py_label, 1, 10, 1, 1);
-        gp.add(pythonArea, 1, 11, 1, 5);
-        gp.add(copy, 1, 16, 1, 1);
-        gp.add(save, 1, 17, 1, 1);
+        gp.add(py_label, 4, 1, 1, 1);
+        gp.add(pythonArea, 4, 2, 1, 5);
+        gp.add(copy, 5, 2, 1, 1);
+        gp.add(save, 5, 3, 1, 1);
+
+        bp.setCenter(gp);
 
         primaryStage.setTitle("Java.Py");
-        primaryStage.setScene(new Scene(gp, 1000, 600));
+        primaryStage.setScene(new Scene(bp, 1160, 700));
         primaryStage.show();
     }
 
@@ -162,6 +209,7 @@ public class Main extends Application {
             output.close();
 
             area.setText(everything);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -190,8 +238,6 @@ public class Main extends Application {
             e.printStackTrace();
         }
 
-        MyVisitor visitor = new MyVisitor();
-        visitor.visit(tree);
     }
 
     public static void main(String[] args) throws IOException {

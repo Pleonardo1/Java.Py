@@ -1,7 +1,0 @@
- class MyNum:
- 	 	 	 x={1,2,3}
- 	 	 i=0
- 	 	 	 
-
- m = MyNum() 
- m.main()

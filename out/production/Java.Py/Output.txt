@@ -1,2 +1,10 @@
-import sys 
 class Test :
+	def main (self ):
+		i = 0 
+		while i < 10 :
+			try :
+				print (i )
+				name = Patrick 
+			finally :
+				i += 2 
+

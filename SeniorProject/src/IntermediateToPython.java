@@ -11,8 +11,10 @@ public class IntermediateToPython {
     public PythonASTFileInput visitCompilationUnit(IntASTCompilationUnit ctx) {
         PythonASTFileInput root = new PythonASTFileInput();
 
-        root.addChild(new PythonASTTerminal("import sys"));
-        root.addChild(new PythonASTTerminal.PythonASTNewline());
+        if (ctx.hasMain()) {
+            root.addChild(new PythonASTTerminal("import sys"));
+            root.addChild(new PythonASTTerminal.PythonASTNewline());
+        }
 
         // convert the imports
         for (IntASTImport node : ctx.getImportDeclaration()) {
@@ -931,39 +933,27 @@ public class IntermediateToPython {
         }
 
         // check whether the forUpdate is a binary or unary expression
-        if (ctx.getChild(2).getChild(0) instanceof IntASTUnaryExpression) {
-            // have a unary expression, ensure it's plus or minus
-            IntASTUnaryExpression forUpdate = (IntASTUnaryExpression) ctx.getChild(2).getChild(0);
+        if (!(ctx.getChild(2).getChild(0) instanceof IntASTUnaryExpression)) {
+            return false;
+        }
+        // have a unary expression, ensure it's plus or minus
+        IntASTUnaryExpression forUpdate = (IntASTUnaryExpression) ctx.getChild(2).getChild(0);
 
-            if (!forUpdate.getOperator().getText().equals("++") && !forUpdate.getOperator().getText().equals("--")) {
-                return false;
-            }
+        if (!forUpdate.getOperator().getText().equals("++") && !forUpdate.getOperator().getText().equals("--")) {
+            return false;
+        }
 
-            // ensure the correct variable is being updated
-            if (!(forUpdate.getExpressionNotOperator() instanceof IntASTIdentifier &&
-                    forUpdate.getExpressionNotOperator().getText().equals(loopVar))) {
-                return false;
-            }
-        } else {
-            // have a binary expression, ensure its addition or subtraction
-            IntASTBinaryExpression forUpdate = (IntASTBinaryExpression) ctx.getChild(2).getChild(0);
-
-            if (!forUpdate.getOperator().getText().equals("+=") && !forUpdate.getOperator().getText().equals("-=")) {
-                return false;
-            }
-
-            // ensure the correct variable is being updated
-            if (!(forUpdate.getExpressionNotOperator(0) instanceof IntASTIdentifier &&
-                    forUpdate.getExpressionNotOperator(0).getText().equals(loopVar))) {
-                return false;
-            }
+        // ensure the correct variable is being updated
+        if (!(forUpdate.getExpressionNotOperator() instanceof IntASTIdentifier &&
+                forUpdate.getExpressionNotOperator().getText().equals(loopVar))) {
+            return false;
         }
 
         // we SHOULD have a basic for loop at this point
         return true;
     }
 
-    public PythonASTForStatement visitFor(IntASTFor ctx) {
+    public PythonASTNode visitFor(IntASTFor ctx) {
         PythonASTForStatement root = new PythonASTForStatement();
         PythonASTExpressionList expr_list = new PythonASTExpressionList();
 
@@ -1067,12 +1057,121 @@ public class IntermediateToPython {
                 expr1;
                 while (expr2) {
                    try {
-                      ...
+                      suite
                    } finally {
                       expr3;
                    }
                 }
                  */
+                IntASTExpressionList intExpr1 = (IntASTExpressionList) control.getChild(0);
+                IntASTExpression intExpr2 = (IntASTExpression) control.getChild(1);
+                IntASTExpressionList intExpr3 = (IntASTExpressionList) control.getChild(2);
+
+                // convert expr1
+                List<IntASTExpression> expr1Exprs = intExpr1.getExpression();
+                PythonASTSimpleStatement expr1 = new PythonASTSimpleStatement();
+                PythonASTSmallStatement small;
+                if (!expr1Exprs.isEmpty()) {
+                    for (int i = 0; i < expr1Exprs.size() - 1; i++) {
+                        small = new PythonASTSmallStatement();
+                        small.addChild(visitExpression(expr1Exprs.get(i)));
+
+                        expr1.addChild(small);
+                        expr1.addChild(new PythonASTTerminal(";"));
+                    }
+                    small = new PythonASTSmallStatement();
+                    small.addChild(visitExpression(expr1Exprs.get(expr1Exprs.size() - 1)));
+
+                    expr1.addChild(small);
+                    expr1.addChild(new PythonASTTerminal.PythonASTNewline());
+                } else {
+                    expr1 = null;
+                }
+
+                // convert expr2
+                PythonASTExpression expr2 = visitExpression(intExpr2);
+
+                // convert expr3
+                List<IntASTExpression> expr3Exprs = intExpr3.getExpression();
+                PythonASTStatement expr3 = new PythonASTStatement();
+                if (!expr3Exprs.isEmpty()) {
+                    PythonASTSimpleStatement expr3_simple = new PythonASTSimpleStatement();
+
+                    for (int i = 0; i < expr3Exprs.size() - 1; i++) {
+                        small = new PythonASTSmallStatement();
+                        small.addChild(visitExpression(expr3Exprs.get(i)));
+
+                        expr3_simple.addChild(small);
+                        expr3_simple.addChild(new PythonASTTerminal(";"));
+                    }
+                    small = new PythonASTSmallStatement();
+                    small.addChild(visitExpression(expr3Exprs.get(expr3Exprs.size() - 1)));
+
+                    expr3_simple.addChild(small);
+                    expr3_simple.addChild(new PythonASTTerminal.PythonASTNewline());
+
+                    expr3.addChild(expr3_simple);
+                } else {
+                    expr3 = null;
+                }
+
+                PythonASTStatement stmt = new PythonASTStatement();
+                PythonASTCompoundStatement comp = new PythonASTCompoundStatement();
+                PythonASTWhileStatement whileStmt = new PythonASTWhileStatement();
+                PythonASTTryStatement tryStmt = new PythonASTTryStatement();
+                PythonASTSuite suite = new PythonASTSuite();
+                PythonASTSuite finallySuite = new PythonASTSuite();
+
+
+                // For Init
+                comp.addChild(expr1);
+
+                // loop head
+                whileStmt.addChild(new PythonASTTerminal("while"));
+                whileStmt.addChild(expr2);
+                whileStmt.addChild(new PythonASTTerminal(":"));
+
+                // loop body
+                suite.addChild(new PythonASTTerminal.PythonASTNewline());
+                suite.addChild(new PythonASTTerminal.PythonASTIndent());
+
+                tryStmt.addChild (new PythonASTTerminal("try"));
+                tryStmt.addChild(new PythonASTTerminal(":"));
+
+                // Add suite
+                IntASTStatement body = ctx.getStatement();
+
+                if (body instanceof IntASTBlock) {
+                    tryStmt.addChild(visitBlock((IntASTBlock) body));
+                } else {
+                    PythonASTSuite trySuite = new PythonASTSuite();
+                    trySuite.addChild(new PythonASTTerminal.PythonASTNewline());
+                    trySuite.addChild(new PythonASTTerminal.PythonASTIndent());
+                    trySuite.addChild(visitStatement(body));
+                    trySuite.addChild(new PythonASTTerminal.PythonASTDedent());
+
+                    tryStmt.addChild(trySuite);
+                }
+
+                tryStmt.addChild (new PythonASTTerminal("finally"));
+                tryStmt.addChild(new PythonASTTerminal(":"));
+
+                finallySuite.addChild(new PythonASTTerminal.PythonASTNewline());
+                finallySuite.addChild(new PythonASTTerminal.PythonASTIndent());
+                finallySuite.addChild(expr3);
+                finallySuite.addChild(new PythonASTTerminal.PythonASTDedent());
+
+                tryStmt.addChild(finallySuite);
+                PythonASTCompoundStatement tmp = new PythonASTCompoundStatement();
+                tmp.addChild(tryStmt);
+                stmt.addChild(tmp);
+                suite.addChild(stmt);
+                suite.addChild(new PythonASTTerminal.PythonASTDedent());
+
+                whileStmt.addChild(suite);
+                comp.addChild(whileStmt);
+
+                return comp;
             }
         }
 

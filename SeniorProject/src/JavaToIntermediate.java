@@ -21,7 +21,7 @@ import java.util.TreeSet;
  */
 public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
-
+    private boolean hasMainMethod = false;
 
     /**
      * Top-level tree traversal. The node returned from this
@@ -48,6 +48,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         for (JavaParser.TypeDeclarationContext typeCtx : ctx.typeDeclaration()) {
             root.addChild(visitTypeDeclaration(typeCtx));
         }
+        // set whether this compilation unit contains a main method
+        root.hasMain(this.hasMainMethod);
         // return the compilation unit node
         return root;
         // this ignores annotations
@@ -328,6 +330,7 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 // decide whether the method is the main method or not
                 if (isMainMethod(ctx)) {
                     ((IntASTMethod) root).setMain(true);
+                    this.hasMainMethod = true;
                 }
             }
             return root;

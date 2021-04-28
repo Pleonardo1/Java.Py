@@ -11,6 +11,7 @@ public class PythonASTTrailer extends AbstractPythonASTBranchNode {
             return;
         } else if (child instanceof PythonASTTerminal
                 || child instanceof PythonASTArgList
+                || child instanceof PythonASTExpression
                 || child instanceof PythonASTExpressionList) {
             child.setParent(this);
             super.children.add(child);

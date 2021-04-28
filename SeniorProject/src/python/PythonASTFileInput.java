@@ -9,7 +9,7 @@ public class PythonASTFileInput extends AbstractPythonASTBranchNode {
     public void addChild(PythonASTNode child) {
         if (child == null) {
             return;
-        } else if (child instanceof PythonASTStatement || child instanceof PythonASTTerminal) {
+        } else if (child instanceof PythonASTStatement || child instanceof PythonASTTerminal || child instanceof PythonASTImportStatement) {
             child.setParent(this);
             super.children.add(child);
         } else {

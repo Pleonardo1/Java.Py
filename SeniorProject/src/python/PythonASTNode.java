@@ -21,6 +21,8 @@ public interface PythonASTNode {
 
     void addChild(PythonASTNode child);
 
+    void resetChildren();
+
     String getText();
 
     void setText(String text);

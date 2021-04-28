@@ -2,6 +2,7 @@ import intermediate.IntASTCompilationUnit;
 import intermediate.IntASTNode;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.ImageView;
@@ -12,26 +13,19 @@ import javafx.scene.text.Font;
 import javafx.scene.image.Image;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
-
-
-
-import java.io.*;
-import java.util.Iterator;
-
-import python.*;
-
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-
 import javafx.stage.Stage;
-
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import java.io.*;
+import java.util.Iterator;
+import python.*;
 
 
 public class Main extends Application {
@@ -117,13 +111,20 @@ public class Main extends Application {
         convert.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
+                // Writes the Java Text Area Code to the Input file used for parsing
                 write(javaArea, "SeniorProject/src/Input.txt");
+                
+                // Check if the Java File is empty and if not generate the parse tree
+                File java_file = new File("SeniorProject/src/Input.txt");
+                isEmptyFile(java_file);
                 treeGeneration();
+                
+                // Reads the python output file and writes it to the Python Text Area
                 read(pythonArea, "SeniorProject/src/Output.txt");
             }
         });
 
-        // Create Clipboard
+        // Create Clipboard for Copying Code
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent content = new ClipboardContent();
 
@@ -136,15 +137,14 @@ public class Main extends Application {
             }
         });
 
+        // Project Logo
         Image image = new Image("File:SeniorProject/src/JavaPy2.png");
         ImageView view = new ImageView(image);
         view.setPreserveRatio(true);
         view.setFitHeight(90);
-        //view.setFitWidth(100);
 
         // Scene Order
         GridPane gp = new GridPane();
-        //gp.setStyle("-fx-background: rgb(50,50,50);");
         gp.setHgap(10);
         gp.setVgap(10);
 
@@ -154,7 +154,6 @@ public class Main extends Application {
         bp.setMargin(view, new Insets(10, 0, 20, 10));
 
         //Java Item Positioning
-        //gp.add(view, 1, 0, 2, 1);
         gp.add(java_label, 1, 1, 1, 1);
         gp.add(javaArea, 1, 2, 1, 5);
         gp.add(import_, 2, 2, 1, 1);
@@ -172,6 +171,16 @@ public class Main extends Application {
         primaryStage.setTitle("Java.Py");
         primaryStage.setScene(new Scene(bp, 1160, 700));
         primaryStage.show();
+    }
+    
+    public static void isEmptyFile(File file) {
+        if (file.length() <= 2) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Information Dialog");
+            alert.setHeaderText(null);
+            alert.setContentText("You are not converting anything!");
+            alert.showAndWait();
+        }
     }
 
     public static void write (TextArea area, String path) {
@@ -227,11 +236,11 @@ public class Main extends Application {
         JavaParser parser = new JavaParser(token);
         ParseTree tree = parser.compilationUnit();
 
-        System.out.println("Intermediate tree conversion:");
+        // System.out.println("Intermediate tree conversion:");
         IntASTNode intNode = toIntermediate(tree);
-        System.out.println("\n\n");
+        // System.out.println("\n\n");
 
-        System.out.println("Python tree conversion:");
+        // System.out.println("Python tree conversion:");
         try {
             FormatPy pythonNode = intermediateToPython((IntASTCompilationUnit) intNode);
         } catch (IOException e) {
@@ -248,7 +257,7 @@ public class Main extends Application {
         // convert to intermediate
         JavaToIntermediate intermediate = new JavaToIntermediate();
         IntASTNode out = intermediate.visit(javaAST);
-        printIntermediate(out, "");
+        // printIntermediate(out, "");
         return out;
     }
 
@@ -263,7 +272,7 @@ public class Main extends Application {
         myPy.output(myWriter);
         myWriter.close();
         
-        printPythonTree(out, "");
+        // printPythonTree(out, "");
         return myPy;
     }
 

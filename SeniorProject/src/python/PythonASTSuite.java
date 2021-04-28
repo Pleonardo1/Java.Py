@@ -20,6 +20,7 @@ public class PythonASTSuite extends AbstractPythonASTBranchNode {
         } else if (child instanceof PythonASTTerminal.PythonASTNewline
                 || child instanceof PythonASTTerminal.PythonASTIndent
                 || child instanceof PythonASTTerminal.PythonASTDedent
+                || child instanceof PythonASTPassStatement
                 || child instanceof PythonASTStatement) {
             // ensure we aren't mixing rule variations
             if (getChildCount(PythonASTSimpleStatement.class) != 0) {

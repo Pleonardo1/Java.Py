@@ -16,6 +16,11 @@ public class IntermediateToPython {
             root.addChild(new PythonASTTerminal.PythonASTNewline());
         }
 
+        if (ctx.usesMath()) {
+            root.addChild(new PythonASTTerminal("import math"));
+            root.addChild(new PythonASTTerminal.PythonASTNewline());
+        }
+
         // convert the imports
         for (IntASTImport node : ctx.getImportDeclaration()) {
             root.addChild(visitImport(node));
@@ -213,6 +218,11 @@ public class IntermediateToPython {
             root.addChild(visitMember(node));
         }
 
+        if (root.getChildCount() == 2) {
+            root.addChild(new PythonASTPassStatement());
+            root.addChild(new PythonASTTerminal.PythonASTNewline());
+        }
+
         root.addChild(new PythonASTTerminal.PythonASTDedent());
 
         return root;
@@ -236,8 +246,12 @@ public class IntermediateToPython {
             root.addChild(stmt);
 
         } else if (ctx instanceof IntASTMethod) {
+            PythonASTFunction func = visitMethod((IntASTMethod) ctx);
+            if (func == null) {
+                return null;
+            }
             PythonASTCompoundStatement stmt = new PythonASTCompoundStatement();
-            stmt.addChild(visitMethod((IntASTMethod) ctx));
+            stmt.addChild(func);
             root.addChild(stmt);
 
         } else {
@@ -1243,6 +1257,37 @@ public class IntermediateToPython {
         return root;
     }
 
+    private PythonASTExpression applyStrCast(PythonASTExpression expr) {
+        if (expr instanceof PythonASTBinaryExpression) {
+            if (expr.getChild(0, PythonASTTerminal.class).getText().equals("+")) {
+                PythonASTBinaryExpression bin = new PythonASTBinaryExpression();
+                bin.addChild(applyStrCast(expr.getChild(0, PythonASTExpression.class)));
+                bin.addChild(expr.getChild(0, PythonASTTerminal.class));
+                bin.addChild(applyStrCast(expr.getChild(1, PythonASTExpression.class)));
+                return bin;
+            }
+
+        } else if (expr instanceof PythonASTAtomExpression) {
+            String str = expr.getChild(0).getChild(0).getText();
+            if (str.startsWith("\"") && str.endsWith("\"")) {
+                return expr;
+            }
+        }
+        PythonASTAtomExpression atomExpr = new PythonASTAtomExpression();
+        PythonASTAtom atom = new PythonASTAtom();
+        PythonASTTrailer trail = new PythonASTTrailer();
+
+        atom.addChild(new PythonASTTerminal("str"));
+        trail.addChild(new PythonASTTerminal("("));
+        trail.addChild(expr);
+        trail.addChild(new PythonASTTerminal(")"));
+
+        atomExpr.addChild(atom);
+        atomExpr.addChild(trail);
+
+        return atomExpr;
+    }
+
     public PythonASTAtomExpression visitMethodCall(IntASTMethodCall ctx) {
         PythonASTAtomExpression root = new PythonASTAtomExpression();
         PythonASTAtom atom = new PythonASTAtom();
@@ -1256,6 +1301,21 @@ public class IntermediateToPython {
 
         root.addChild(atom);
         root.addChild(trail);
+
+        // check whether we have a print statement
+        if (ctx.getIdentifier().getText().equals("System.out.print") || ctx.getIdentifier().getText().equals("System.out.println")) {
+            // have a print statement, so cast all variable names to string
+            PythonASTExpressionList  exprList = (PythonASTExpressionList) trail.getChild(1);
+            if (exprList.getChildCount() == 1) {
+                PythonASTExpression expr = (PythonASTExpression) exprList.getChild(0);
+
+                // apply str() to parts of the expression separated by a "+"
+                expr = applyStrCast(expr);
+
+                exprList.resetChildren();
+                exprList.addChild(expr);
+            }
+        }
 
         if (ctx.getIdentifier().getText().equals("System.out.print")) {
             trail.getChild(1).addChild(new PythonASTTerminal(","));
@@ -1348,6 +1408,9 @@ public class IntermediateToPython {
     }
 
     private static PythonASTTerminal convertIdentifier(String id) {
+        if (id.startsWith("java.lang.")) {
+            id = id.substring(10);
+        }
         switch (id) {
             case "double":
                 return new PythonASTTerminal("float");
@@ -1364,6 +1427,43 @@ public class IntermediateToPython {
                 return new PythonASTTerminal("print");
             case "System.out.printf":
                 return new PythonASTTerminal("printf");
+            case "Math.acos":
+            case "Math.asin":
+            case "Math.atan":
+            case "Math.atan2":
+            case "Math.ceil":
+            case "Math.copySign":
+            case "Math.cos":
+            case "Math.cosh":
+            case "Math.exp":
+            case "Math.expm1":
+            case "Math.floor":
+            case "Math.hypot":
+            case "Math.log":
+            case "Math.log10":
+            case "Math.log1p":
+            case "Math.max":
+            case "Math.min":
+            case "Math.nextAfter":
+            case "Math.sin":
+            case "Math.sinh":
+            case "Math.sqrt":
+            case "Math.tan":
+            case "Math.tanh":
+            case "Math.ulp":
+            case "Math.E":
+            case "Math.PI":
+                return new PythonASTTerminal(id.toLowerCase());
+            case "Math.abs":
+                return new PythonASTTerminal("math.fabs");
+            case "Math.floorMod":
+                return new PythonASTTerminal("math.fmod");
+            case "Math.IEEEremainder":
+                return new PythonASTTerminal("math.remainder");
+            case "Math.toDegrees":
+                return new PythonASTTerminal("math.degrees");
+            case "Math.toRadians":
+                return new PythonASTTerminal("math.radians");
             default:
                 // check for "this" identifier
                 StringBuilder str = new StringBuilder();

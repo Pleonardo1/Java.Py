@@ -78,6 +78,9 @@ public class PythonASTTerminal extends AbstractPythonASTNode {
     }
 
     @Override
+    public void resetChildren() { }
+
+    @Override
     public boolean isLeaf() {
         return true;
     }

@@ -22,6 +22,7 @@ import java.util.TreeSet;
 public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
 
     private boolean hasMainMethod = false;
+    private boolean usesMath = false;
 
     /**
      * Top-level tree traversal. The node returned from this
@@ -50,6 +51,8 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
         }
         // set whether this compilation unit contains a main method
         root.hasMain(this.hasMainMethod);
+        // set whether this compilation unit uses the Java Math class
+        root.usesMath(this.usesMath);
         // return the compilation unit node
         return root;
         // this ignores annotations
@@ -1312,9 +1315,13 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                     if (name.length() > 0) {
                         name.append(".");
                         name.append(tmp.getChild(0).getText());
+                        String s = name.toString();
+                        if (s.startsWith("Math.") || s.startsWith("java.lang.Math.")) {
+                            this.usesMath = true;
+                        }
                         IntASTExpressionList exp = ((IntASTMethodCall) tmp).getExpressionList();
                         tmp = new IntASTMethodCall();
-                        tmp.addChild(new IntASTIdentifier(name.toString()));
+                        tmp.addChild(new IntASTIdentifier(s));
                         tmp.addChild(exp);
                         root.addChild(tmp);
                         name.setLength(0);
@@ -1333,7 +1340,11 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 }
             }
             if (name.length() != 0) {
-                root.addChild(new IntASTIdentifier(name.toString()));
+                String s = name.toString();
+                if (s.startsWith("Math.") || s.startsWith("java.lang.Math.")) {
+                    this.usesMath = true;
+                }
+                root.addChild(new IntASTIdentifier(s));
             }
             if (ctx.INC() != null) {
                 IntASTUnaryExpression unary = new IntASTUnaryExpression();

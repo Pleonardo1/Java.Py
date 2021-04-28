@@ -14,6 +14,11 @@ public abstract class AbstractPythonASTBranchNode extends AbstractPythonASTNode 
     }
 
     @Override
+    public void resetChildren() {
+        this.children.clear();
+    }
+
+    @Override
     public PythonASTNode getChild(int index) {
         return this.children.get(index);
     }

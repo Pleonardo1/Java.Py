@@ -1,10 +1,21 @@
-class Test :
-	def main (self ):
-		i = 0 
-		while i < 10 :
-			try :
-				print (i )
-				name = Patrick 
-			finally :
-				i += 2 
-
+import sys 
+import math 
+class NewClass :
+	pass 
+if __name__ == "__main__" :
+	args = sys.argv 
+	Vali = - 1 
+	Valf = .5 
+	print ("Initial value of int  : " + str (Vali ))
+	print ("Initial value of int  : " + str (Valf ))
+	Absi = math.abs (Vali )
+	Absf = math.abs (Valf )
+	print ("Absolute value of int : " + str (Absi ))
+	print ("Absolute value of int : " + str (Absf ))
+	print ("" )
+	Acosi = math.acos (60 )
+	print ("acos value of Acosi : " + str (Acosi ))
+	x = math.pi 
+	x = math.radians (x )
+	Acosj = math.acos (x )
+	print ("acos value of Acosj : " + str (Acosj ))

@@ -9,6 +9,7 @@ import java.util.List;
  */
 public class IntASTCompilationUnit extends AbstractIntASTBranchNode {
     private boolean hasMain = false;
+    private boolean usesMath = false;
 
     public IntASTCompilationUnit() {
         super("");
@@ -68,6 +69,14 @@ public class IntASTCompilationUnit extends AbstractIntASTBranchNode {
 
     public void hasMain(boolean hasMain) {
         this.hasMain = hasMain;
+    }
+
+    public boolean usesMath() {
+        return this.usesMath;
+    }
+
+    public void usesMath(boolean usesMath) {
+        this.usesMath = usesMath;
     }
 
     // convenience methods

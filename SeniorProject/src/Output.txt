@@ -1,15 +1,19 @@
 import sys 
-import math 
-class JavaMathExample2 :
+class Animal :
+	designation = "Animal" 
+	def speak (self ):
+		print ("*Animal noise*" )
+
+class Lion (Animal ):
+	animalType = "Mammal" 
+	def speak (self ):
+		print ("Roar" )
+
+class Main :
 	pass 
 if __name__ == "__main__" :
 	args = sys.argv 
-	a = 30 
-	b = math.radians (a )
-	print ("Sine value of a is: " + str (math.sin (a )))
-	print ("Cosine value of a is: " + str (math.cos (a )))
-	print ("Tangent value of a is: " + str (math.tan (a )))
-	print ("Tangent value of a is: " + str (math.atan (a )))
-	print ("Sine value of a is: " + str (math.sinh (a )))
-	print ("Cosine value of a is: " + str (math.cosh (a )))
-	print ("Tangent value of a is: " + str (math.tanh (a )))
+	obj = Lion ()
+	print (str (obj.designation ))
+	print (str (obj.animalType ))
+	obj.speak ()

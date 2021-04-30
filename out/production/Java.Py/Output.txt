@@ -1,4 +1,5 @@
 import sys 
+import math 
 class JavaMathExample2 :
 	pass 
 if __name__ == "__main__" :
@@ -8,8 +9,6 @@ if __name__ == "__main__" :
 	print ("Sine value of a is: " + str (math.sin (a )))
 	print ("Cosine value of a is: " + str (math.cos (a )))
 	print ("Tangent value of a is: " + str (math.tan (a )))
-	print ("Sine value of a is: " + str (math.asin (a )))
-	print ("Cosine value of a is: " + str (math.acos (a )))
 	print ("Tangent value of a is: " + str (math.atan (a )))
 	print ("Sine value of a is: " + str (math.sinh (a )))
 	print ("Cosine value of a is: " + str (math.cosh (a )))

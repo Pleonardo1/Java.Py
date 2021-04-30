@@ -16,12 +16,6 @@ public class JavaMathExample2
         // return the trigonometric tangent value of a  
         System.out.println("Tangent value of a is: " +Math.tan(a));  
           
-        // return the trigonometric arc sine of a      
-        System.out.println("Sine value of a is: " +Math.asin(a));    
-          
-        // return the trigonometric arc cosine value of a  
-        System.out.println("Cosine value of a is: " +Math.acos(a));  
-          
         // return the trigonometric arc tangent value of a  
         System.out.println("Tangent value of a is: " +Math.atan(a));  
   
@@ -35,4 +29,5 @@ public class JavaMathExample2
         System.out.println("Tangent value of a is: " +Math.tanh(a));  
     }    
 }    
+
 

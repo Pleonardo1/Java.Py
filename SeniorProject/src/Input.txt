@@ -1,35 +1,33 @@
-public class NewClass
-{
-  
-    public static void main(String[] args)
-    {
-        // Declaring the variables
-        int Vali = -1;
-        float Valf = .5;
-  
-        // Printing the values
-        System.out.println("Initial value of int  : "+Vali);
-        System.out.println("Initial value of int  : "+Valf);
-  
-  
-        // Use of .abs() method to get the absoluteValue
-        int Absi = Math.abs(Vali);
-        float Absf = Math.abs(Valf);
-  
-        System.out.println("Absolute value of int : "+Absi);
-        System.out.println("Absolute value of int : "+Absf);
-        System.out.println("");
-  
-        // Use of acos() method
-        // Value greater than 1, so passing NaN
-        double Acosi = Math.acos(60);
-        System.out.println("acos value of Acosi : "+Acosi);
-        double x = Math.PI;
-  
-        // Use of toRadian() method
-        x = Math.toRadians(x);
-        double Acosj = Math.acos(x);
-        System.out.println("acos value of Acosj : "+Acosj);
+public class JavaMathExample2    
+{    
+    public static void main(String[] args)     
+    {    
+        double a = 30;    
           
-    }
-}
+        // converting values to radian    
+        double b = Math.toRadians(a);   
+          
+        // return the trigonometric sine of a      
+        System.out.println("Sine value of a is: " +Math.sin(a));    
+          
+        // return the trigonometric cosine value of a  
+        System.out.println("Cosine value of a is: " +Math.cos(a));  
+          
+        // return the trigonometric tangent value of a  
+        System.out.println("Tangent value of a is: " +Math.tan(a));  
+          
+        // return the trigonometric arc tangent value of a  
+        System.out.println("Tangent value of a is: " +Math.atan(a));  
+  
+        // return the hyperbolic sine of a      
+        System.out.println("Sine value of a is: " +Math.sinh(a));    
+          
+        // return the hyperbolic cosine value of a  
+        System.out.println("Cosine value of a is: " +Math.cosh(a));  
+          
+        // return the hyperbolic tangent value of a  
+        System.out.println("Tangent value of a is: " +Math.tanh(a));  
+    }    
+}    
+
+

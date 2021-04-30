@@ -74,9 +74,10 @@ public class Main extends Application {
         // Import button
         import_.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
+                pythonArea.setText("");
+
                 //Opening a dialog box
                 File f = fileChooser1.showOpenDialog(primaryStage);
-                //java_label.setText("Java Code: " + f.toString());
                 read(javaArea, f.toString());
             }});
 
@@ -84,7 +85,6 @@ public class Main extends Application {
             public void handle(ActionEvent event) {
                 javaArea.setText("");
                 pythonArea.setText("");
-                //java_label.setText("Java Code");
             }});
 
 
@@ -170,6 +170,7 @@ public class Main extends Application {
 
         primaryStage.setTitle("Java.Py");
         primaryStage.setScene(new Scene(bp, 1160, 700));
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
     
@@ -178,7 +179,7 @@ public class Main extends Application {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Information Dialog");
             alert.setHeaderText(null);
-            alert.setContentText("You are not converting anything!");
+            alert.setContentText("The file you are converting is empty!");
             alert.showAndWait();
         }
     }
@@ -236,11 +237,11 @@ public class Main extends Application {
         JavaParser parser = new JavaParser(token);
         ParseTree tree = parser.compilationUnit();
 
-        // System.out.println("Intermediate tree conversion:");
+        //System.out.println("Intermediate tree conversion:");
         IntASTNode intNode = toIntermediate(tree);
-        // System.out.println("\n\n");
+        //System.out.println("\n\n");
 
-        // System.out.println("Python tree conversion:");
+        //System.out.println("Python tree conversion:");
         try {
             FormatPy pythonNode = intermediateToPython((IntASTCompilationUnit) intNode);
         } catch (IOException e) {
@@ -257,7 +258,7 @@ public class Main extends Application {
         // convert to intermediate
         JavaToIntermediate intermediate = new JavaToIntermediate();
         IntASTNode out = intermediate.visit(javaAST);
-        // printIntermediate(out, "");
+        //printIntermediate(out, "");
         return out;
     }
 
@@ -272,7 +273,7 @@ public class Main extends Application {
         myPy.output(myWriter);
         myWriter.close();
         
-        // printPythonTree(out, "");
+        //printPythonTree(out, "");
         return myPy;
     }
 

@@ -1,21 +1,16 @@
 import sys 
-import math 
-class NewClass :
+class JavaMathExample2 :
 	pass 
 if __name__ == "__main__" :
 	args = sys.argv 
-	Vali = - 1 
-	Valf = .5 
-	print ("Initial value of int  : " + str (Vali ))
-	print ("Initial value of int  : " + str (Valf ))
-	Absi = math.abs (Vali )
-	Absf = math.abs (Valf )
-	print ("Absolute value of int : " + str (Absi ))
-	print ("Absolute value of int : " + str (Absf ))
-	print ("" )
-	Acosi = math.acos (60 )
-	print ("acos value of Acosi : " + str (Acosi ))
-	x = math.pi 
-	x = math.radians (x )
-	Acosj = math.acos (x )
-	print ("acos value of Acosj : " + str (Acosj ))
+	a = 30 
+	b = math.radians (a )
+	print ("Sine value of a is: " + str (math.sin (a )))
+	print ("Cosine value of a is: " + str (math.cos (a )))
+	print ("Tangent value of a is: " + str (math.tan (a )))
+	print ("Sine value of a is: " + str (math.asin (a )))
+	print ("Cosine value of a is: " + str (math.acos (a )))
+	print ("Tangent value of a is: " + str (math.atan (a )))
+	print ("Sine value of a is: " + str (math.sinh (a )))
+	print ("Cosine value of a is: " + str (math.cosh (a )))
+	print ("Tangent value of a is: " + str (math.tanh (a )))

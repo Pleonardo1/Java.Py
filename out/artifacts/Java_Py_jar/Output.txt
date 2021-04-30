@@ -1,0 +1,17 @@
+class MyNum :
+	pass 
+def testEnhancedLoop ():
+	numbers = [5 , 10 , 15 , 20 , 25 ] 
+	for x in numbers :
+		print (str (x ), end = "" )
+		print ("," , end = "" )
+	print ("\n" , end = "" )
+	names = ["Lexi" , "Niki" , "Patrick" , "Josh" ] 
+	for name in names :
+		print (str (name )+ str (5 ), end = "" )
+		print ("," , end = "" )
+	print ()
+	for i in range (0 , 2 , 1 ):
+		for j in range (0 , 1 , 1 ):
+			print (str (j ))
+

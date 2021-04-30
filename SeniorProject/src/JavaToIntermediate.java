@@ -1308,6 +1308,11 @@ public class JavaToIntermediate extends JavaBaseVisitor<IntASTNode> {
                 name.append(tmp.getText());
             } else {
                 root.addChild(tmp);
+                if (tmp instanceof IntASTMethodCall) {
+                    if (tmp.getChild(0).getText().startsWith("Math.") || tmp.getChild(0).getText().startsWith("java.lang.Math.")) {
+                        this.usesMath = true;
+                    }
+                }
             }
             for (JavaParser.SelectorContext select : ctx.selector()) {
                 tmp = visitSelector(select);
